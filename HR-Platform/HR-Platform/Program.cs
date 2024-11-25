@@ -22,6 +22,12 @@ namespace HR_Platform
 
             var app = builder.Build();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                CreateRoles(services).GetAwaiter().GetResult();
+            }
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -49,7 +55,21 @@ namespace HR_Platform
             app.Run();
         }
 
+        private static async Task CreateRoles(IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    
+            var roles = new[] { "Admin", "HR", "Recruiter", "Manager", "Employee" };
+
+            foreach (var role in roles)
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+        }
+
     }
 }
