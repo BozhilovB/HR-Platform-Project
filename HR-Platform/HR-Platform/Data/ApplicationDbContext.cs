@@ -1,13 +1,48 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace HR_Platform.Data
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamMember> TeamMembers { get; set; }
+    public DbSet<JobPosting> JobPostings { get; set; }
+    public DbSet<JobApplication> JobApplications { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+        base.OnModelCreating(builder);
+
+        builder.Entity<Team>()
+            .HasOne(t => t.Manager)
+            .WithMany()
+            .HasForeignKey(t => t.ManagerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TeamMember>()
+            .HasKey(tm => new { tm.TeamId, tm.UserId });
+
+        builder.Entity<TeamMember>()
+            .HasOne(tm => tm.Team)
+            .WithMany(t => t.TeamMembers)
+            .HasForeignKey(tm => tm.TeamId);
+
+        builder.Entity<TeamMember>()
+            .HasOne(tm => tm.User)
+            .WithMany(u => u.Teams)
+            .HasForeignKey(tm => tm.UserId);
+
+        builder.Entity<JobPosting>()
+            .HasOne(jp => jp.Recruiter)
+            .WithMany()
+            .HasForeignKey(jp => jp.RecruiterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<JobApplication>()
+            .HasOne(ja => ja.JobPosting)
+            .WithMany(jp => jp.JobApplications)
+            .HasForeignKey(ja => ja.JobPostingId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
