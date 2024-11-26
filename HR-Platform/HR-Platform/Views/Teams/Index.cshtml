@@ -1,0 +1,29 @@
+﻿@model IEnumerable<Team>
+
+<h2>Teams</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Manager</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var team in Model)
+        {
+            <tr>
+                <td>@team.Name</td>
+                <td>@team.Manager.UserName</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@team.Id" class="btn btn-info">Details</a>
+                    <a asp-action="Edit" asp-route-id="@team.Id" class="btn btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@team.Id" class="btn btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Create" class="btn btn-success">Create New Team</a>
