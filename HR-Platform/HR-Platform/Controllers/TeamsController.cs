@@ -96,6 +96,70 @@ public class TeamsController : Controller
 
 
 
+    [HttpGet]
+    public async Task<IActionResult> Create()
+    {
+        await PopulateManagersDropdown();
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(Team team)
+    {
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                // Save the new team
+                _context.Teams.Add(team);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+        }
+        await PopulateManagersDropdown();
+        return View(team);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var team = await _context.Teams
+            .Include(t => t.Manager)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (team == null)
+        {
+            return NotFound();
+        }
+
+        return View(team);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var team = await _context.Teams.FindAsync(id);
+
+        if (team != null)
+        {
+            _context.Teams.Remove(team);
+            await _context.SaveChangesAsync();
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+
+
+
 
 
     private async Task PopulateManagersDropdown(string? selectedManagerId = null)

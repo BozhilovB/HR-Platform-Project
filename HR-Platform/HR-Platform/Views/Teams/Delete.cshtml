@@ -1,0 +1,24 @@
+﻿@model Team
+
+<h2>Delete Team</h2>
+
+<div class="alert alert-danger">
+    Are you sure you want to delete the following team?
+</div>
+
+<table class="table">
+    <tr>
+        <th>Team Name</th>
+        <td>@Model.Name</td>
+    </tr>
+    <tr>
+        <th>Manager</th>
+        <td>@Model.Manager?.UserName</td>
+    </tr>
+</table>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
