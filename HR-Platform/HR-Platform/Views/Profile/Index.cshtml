@@ -1,0 +1,56 @@
+﻿@using Microsoft.AspNetCore.Identity
+@model ProfileViewModel
+
+<h1>@Model.User.FirstName @Model.User.LastName's Profile</h1>
+
+@inject UserManager<ApplicationUser> UserManager
+
+<p><strong>Name:</strong> @Model.User.FirstName @Model.User.LastName</p>
+<p><strong>Email:</strong> @Model.User.Email</p>
+
+@if (await UserManager.IsInRoleAsync(Model.User, "Manager") || await UserManager.IsInRoleAsync(Model.User, "Admin"))
+{
+        <h3>Teams @(Model.IsOwnProfile ? "You Are Managing" : $"{Model.User.FirstName} Is Managing")</h3>
+    @if (Model.ManagedTeam != null)
+    {
+                <ul>
+                    <li>
+                @Model.ManagedTeam.Name 
+                        (Manager Since: @(Model.ManagedTeam.ManagerId == Model.User.Id ? DateTime.UtcNow.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture) : "N/A"))
+                @if (Model.IsOwnProfile)
+                {
+                                <a asp-controller="Teams" asp-action="Details" asp-route-id="@Model.ManagedTeam.Id" class="btn btn-primary btn-sm">View Team</a>
+                }
+                    </li>
+                </ul>
+    }
+    else
+    {
+                <p>@(Model.IsOwnProfile ? "You are not managing any teams." : $"{Model.User.FirstName} is not managing any teams.")</p>
+    }
+}
+
+
+<h3>Teams @(Model.IsOwnProfile ? "You Are Part Of" : $"{Model.User.FirstName} Is Part Of")</h3>
+@if (Model.MemberTeams.Any())
+{
+    <ul>
+        @foreach (var team in Model.MemberTeams)
+        {
+            <li>
+                @team.Team.Name 
+                (Joined: @team.JoinedAt.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture))
+                @if (await UserManager.IsInRoleAsync(Model.User, "Manager") || 
+                     await UserManager.IsInRoleAsync(Model.User, "HR") || 
+                     await UserManager.IsInRoleAsync(Model.User, "Admin"))
+                {
+                    <a asp-controller="Teams" asp-action="Details" asp-route-id="@team.Team.Id" class="btn btn-primary btn-sm">View Team</a>
+                }
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>@(Model.IsOwnProfile ? "You are not part of any teams." : $"{Model.User.FirstName} is not part of any teams.")</p>
+}
