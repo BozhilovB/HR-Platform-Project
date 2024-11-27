@@ -57,11 +57,9 @@ public class TeamsController : Controller
                     return NotFound();
                 }
 
-                // Update fields explicitly
                 existingTeam.Name = team.Name;
                 existingTeam.ManagerId = team.ManagerId;
 
-                // Save changes
                 await _context.SaveChangesAsync();
 
                 return RedirectToAction(nameof(Index));
@@ -73,16 +71,27 @@ public class TeamsController : Controller
             }
         }
 
-        // Re-populate managers dropdown in case of errors
         await PopulateManagersDropdown(team.ManagerId);
         return View(team);
     }
 
 
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var team = await _context.Teams
+            .Include(t => t.Manager)
+            .Include(t => t.TeamMembers)
+            .ThenInclude(tm => tm.User)
+            .FirstOrDefaultAsync(t => t.Id == id);
 
+        if (team == null)
+        {
+            return NotFound();
+        }
 
-
-
+        return View(team);
+    }
 
 
 

@@ -123,6 +123,88 @@ public static class SeedData
             );
         }
 
+        //Seed Employees to Teams
+        var employee1 = new ApplicationUser
+        {
+            Id = "user-employee-1",
+            UserName = "employee1@hrplatform.com",
+            NormalizedUserName = "EMPLOYEE1@HRPLATFORM.COM",
+            Email = "employee1@hrplatform.com",
+            NormalizedEmail = "EMPLOYEE1@HRPLATFORM.COM",
+            EmailConfirmed = true,
+            PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
+            FirstName = "John",
+            LastName = "Doe"
+        };
+
+        var employee2 = new ApplicationUser
+        {
+            Id = "user-employee-2",
+            UserName = "employee2@hrplatform.com",
+            NormalizedUserName = "EMPLOYEE2@HRPLATFORM.COM",
+            Email = "employee2@hrplatform.com",
+            NormalizedEmail = "EMPLOYEE2@HRPLATFORM.COM",
+            EmailConfirmed = true,
+            PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
+            FirstName = "Jane",
+            LastName = "Smith"
+        };
+
+        if (!context.Users.Any(u => u.Id == employee1.Id))
+        {
+            context.Users.Add(employee1);
+        }
+
+        if (!context.Users.Any(u => u.Id == employee2.Id))
+        {
+            context.Users.Add(employee2);
+        }
+
+        await context.SaveChangesAsync();
+
+        var employeeRoleId = context.Roles.FirstOrDefault(r => r.Name == "Employee")?.Id;
+        if (employeeRoleId != null)
+        {
+            if (!context.UserRoles.Any(ur => ur.UserId == employee1.Id && ur.RoleId == employeeRoleId))
+            {
+                context.UserRoles.Add(new IdentityUserRole<string>
+                {
+                    UserId = employee1.Id,
+                    RoleId = employeeRoleId
+                });
+            }
+
+            if (!context.UserRoles.Any(ur => ur.UserId == employee2.Id && ur.RoleId == employeeRoleId))
+            {
+                context.UserRoles.Add(new IdentityUserRole<string>
+                {
+                    UserId = employee2.Id,
+                    RoleId = employeeRoleId
+                });
+            }
+        }
+
+        if (!context.TeamMembers.Any(tm => tm.TeamId == 2 && tm.UserId == employee1.Id))
+        {
+            context.TeamMembers.Add(new TeamMember
+            {
+                TeamId = 2,
+                UserId = employee1.Id,
+                JoinedAt = DateTime.UtcNow.AddDays(-7)
+            });
+        }
+
+        if (!context.TeamMembers.Any(tm => tm.TeamId == 2 && tm.UserId == employee2.Id))
+        {
+            context.TeamMembers.Add(new TeamMember
+            {
+                TeamId = 2,
+                UserId = employee2.Id,
+                JoinedAt = DateTime.UtcNow.AddDays(-4)
+            });
+        }
+
+
         // Save changes
         await context.SaveChangesAsync();
     }

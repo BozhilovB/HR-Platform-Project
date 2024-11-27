@@ -1,0 +1,31 @@
+﻿@model Team
+
+<h2>Team Details</h2>
+
+<div>
+    <h3>Team: @Model.Name</h3>
+    <p><strong>Manager:</strong> @Model.Manager.FirstName @Model.Manager.LastName (@Model.Manager.Email)</p>
+</div>
+
+<h4>Team Members</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Joined At</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var member in Model.TeamMembers)
+        {
+                <tr>
+                    <td>@member.User.FirstName @member.User.LastName</td>
+                    <td>@member.User.Email</td>
+                    <td>@member.JoinedAt.ToShortDateString()</td>
+                </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Index" class="btn btn-secondary">Back to Teams</a>
