@@ -16,5 +16,8 @@ public class ApplicationUser : IdentityUser
 
     public DateTime CreatedAt { get; set; }
 
+    public decimal? Salary { get; set; }
+
     public ICollection<TeamMember> Teams { get; set; } = new List<TeamMember>();
+
 }

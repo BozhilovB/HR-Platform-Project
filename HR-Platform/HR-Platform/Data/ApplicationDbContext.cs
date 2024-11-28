@@ -15,6 +15,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<ApplicationUser>()
+        .Property(u => u.Salary)
+        .HasColumnType("decimal(18,2)");
+
         builder.Entity<Team>()
             .HasOne(t => t.Manager)
             .WithMany()
@@ -46,4 +50,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(ja => ja.JobPostingId)
             .OnDelete(DeleteBehavior.Cascade);
     }
+
 }

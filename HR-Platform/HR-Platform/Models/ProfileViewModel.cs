@@ -3,7 +3,8 @@
 public class ProfileViewModel
 {
     public ApplicationUser User { get; set; } = null!;
-    public Team? ManagedTeam { get; set; }
+    public List<Team>? ManagedTeams { get; set; } = new();
     public List<TeamMember> MemberTeams { get; set; } = new();
     public bool IsOwnProfile { get; set; }
+    public decimal? Salary { get; set; }
 }

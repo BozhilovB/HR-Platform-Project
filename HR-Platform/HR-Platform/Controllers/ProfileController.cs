@@ -41,9 +41,10 @@ public class ProfileController : Controller
             return Forbid();
         }
 
-        var managedTeam = await _context.Teams
-            .Where(t => t.ManagerId == targetUser.Id)
-            .FirstOrDefaultAsync();
+        var managedTeams = await _context.Teams
+        .Where(t => t.ManagerId == targetUser.Id)
+        .ToListAsync();
+
 
         var teamMemberships = await _context.TeamMembers
             .Where(tm => tm.UserId == targetUser.Id)
@@ -55,9 +56,41 @@ public class ProfileController : Controller
         return View(new ProfileViewModel
         {
             User = targetUser,
-            ManagedTeam = managedTeam,
+            ManagedTeams = managedTeams,
             MemberTeams = teamMemberships,
-            IsOwnProfile = isOwnProfile
+            IsOwnProfile = isOwnProfile,
+            Salary = targetUser.Salary
         });
     }
+
+    [Authorize(Roles = "HR,Admin,Recruiter,Manager")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateSalary(string userId, decimal salary)
+    {
+        var currentUserId = _userManager.GetUserId(User);
+
+        var userToUpdate = await _context.Users.Include(u => u.Teams).FirstOrDefaultAsync(u => u.Id == userId);
+        if (userToUpdate == null)
+        {
+            return NotFound();
+        }
+
+        if (User.IsInRole("Manager"))
+        {
+            var managesTeam = await _context.Teams.AnyAsync(t => t.ManagerId == currentUserId && t.TeamMembers.Any(tm => tm.UserId == userId));
+            if (!managesTeam)
+            {
+                return Forbid();
+            }
+        }
+
+        userToUpdate.Salary = salary;
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction("Index", new { id = userId });
+    }
+
+
+
 }

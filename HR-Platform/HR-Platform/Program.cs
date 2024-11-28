@@ -1,6 +1,7 @@
 using HR_Platform.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace HR_Platform
 {
@@ -8,6 +9,10 @@ namespace HR_Platform
     {
         public static void Main(string[] args)
         {
+            var cultureInfo = new CultureInfo("en-US");
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.

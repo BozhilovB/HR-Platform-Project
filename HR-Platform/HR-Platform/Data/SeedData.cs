@@ -8,11 +8,9 @@ public static class SeedData
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // Ensure database is created
         await context.Database.EnsureCreatedAsync();
 
-        // Seed Roles
-        var roles = new[] { "Admin", "HR", "Recruiter", "Manager", "Employee" };
+        var roles = new[] { "Admin", "HR", "Recruiter", "Manager", "Employee", "User" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -21,7 +19,6 @@ public static class SeedData
             }
         }
 
-        // Seed Users
         var adminEmail = "admin@hrplatform.com";
         var managerEmail = "manager@hrplatform.com";
         var applicantEmail = "applicant@hrplatform.com";
@@ -34,7 +31,8 @@ public static class SeedData
                 Email = adminEmail,
                 FirstName = "Admin",
                 LastName = "User",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                Salary = 100000M
             };
             await userManager.CreateAsync(adminUser, "Admin@123");
             await userManager.AddToRoleAsync(adminUser, "Admin");
@@ -48,7 +46,8 @@ public static class SeedData
                 Email = managerEmail,
                 FirstName = "Manager",
                 LastName = "User",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                Salary = 80000M
             };
             await userManager.CreateAsync(managerUser, "Manager@123");
             await userManager.AddToRoleAsync(managerUser, "Manager");
@@ -62,13 +61,13 @@ public static class SeedData
                 Email = applicantEmail,
                 FirstName = "Applicant",
                 LastName = "User",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                Salary = 50000M
             };
             await userManager.CreateAsync(applicantUser, "Applicant@123");
             await userManager.AddToRoleAsync(applicantUser, "Employee");
         }
 
-        // Seed Teams
         if (!context.Teams.Any())
         {
             context.Teams.AddRange(
@@ -77,7 +76,6 @@ public static class SeedData
             );
         }
 
-        // Seed Job Postings
         if (!context.JobPostings.Any())
         {
             context.JobPostings.AddRange(
@@ -100,30 +98,6 @@ public static class SeedData
             await context.SaveChangesAsync();
         }
 
-        // Seed Job Applications
-        if (!context.JobApplications.Any())
-        {
-            context.JobApplications.AddRange(
-                new JobApplication
-                {
-                    ApplicantName = "John Doe",
-                    ApplicantEmail = "johndoe@example.com",
-                    ResumeUrl = "https://example.com/resume/johndoe.pdf",
-                    Status = "Pending",
-                    JobPostingId = context.JobPostings.First().Id
-                },
-                new JobApplication
-                {
-                    ApplicantName = "Jane Smith",
-                    ApplicantEmail = "janesmith@example.com",
-                    ResumeUrl = "https://example.com/resume/janesmith.pdf",
-                    Status = "Approved",
-                    JobPostingId = context.JobPostings.Skip(1).First().Id
-                }
-            );
-        }
-
-        //Seed Employees to Teams
         var employee1 = new ApplicationUser
         {
             Id = "user-employee-1",
@@ -134,7 +108,8 @@ public static class SeedData
             EmailConfirmed = true,
             PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
             FirstName = "John",
-            LastName = "Doe"
+            LastName = "Doe",
+            Salary = 4500.20M
         };
 
         var employee2 = new ApplicationUser
@@ -147,7 +122,8 @@ public static class SeedData
             EmailConfirmed = true,
             PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
             FirstName = "Jane",
-            LastName = "Smith"
+            LastName = "Smith",
+            Salary = 4700.50M
         };
 
         if (!context.Users.Any(u => u.Id == employee1.Id))
@@ -204,8 +180,6 @@ public static class SeedData
             });
         }
 
-
-        // Save changes
         await context.SaveChangesAsync();
     }
 }

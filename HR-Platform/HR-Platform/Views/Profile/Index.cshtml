@@ -10,25 +10,29 @@
 
 @if (await UserManager.IsInRoleAsync(Model.User, "Manager") || await UserManager.IsInRoleAsync(Model.User, "Admin"))
 {
-        <h3>Teams @(Model.IsOwnProfile ? "You Are Managing" : $"{Model.User.FirstName} Is Managing")</h3>
-    @if (Model.ManagedTeam != null)
+    <h3>Teams @(Model.IsOwnProfile ? "You Are Managing" : $"{Model.User.FirstName} Is Managing")</h3>
+    @if (Model.ManagedTeams != null && Model.ManagedTeams.Any())
     {
-                <ul>
-                    <li>
-                @Model.ManagedTeam.Name 
-                        (Manager Since: @(Model.ManagedTeam.ManagerId == Model.User.Id ? DateTime.UtcNow.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture) : "N/A"))
-                @if (Model.IsOwnProfile)
-                {
-                                <a asp-controller="Teams" asp-action="Details" asp-route-id="@Model.ManagedTeam.Id" class="btn btn-primary btn-sm">View Team</a>
-                }
-                    </li>
-                </ul>
+        <ul>
+            @foreach (var team in Model.ManagedTeams)
+            {
+                <li>
+                    @team.Name 
+                    (Manager Since: @DateTime.UtcNow.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture))
+                    @if (Model.IsOwnProfile)
+                    {
+                        <a asp-controller="Teams" asp-action="Details" asp-route-id="@team.Id" class="btn btn-primary btn-sm">View Team</a>
+                    }
+                </li>
+            }
+        </ul>
     }
     else
     {
-                <p>@(Model.IsOwnProfile ? "You are not managing any teams." : $"{Model.User.FirstName} is not managing any teams.")</p>
+        <p>@(Model.IsOwnProfile ? "You are not managing any teams." : $"{Model.User.FirstName} is not managing any teams.")</p>
     }
 }
+
 
 
 <h3>Teams @(Model.IsOwnProfile ? "You Are Part Of" : $"{Model.User.FirstName} Is Part Of")</h3>
@@ -53,4 +57,20 @@
 else
 {
     <p>@(Model.IsOwnProfile ? "You are not part of any teams." : $"{Model.User.FirstName} is not part of any teams.")</p>
+}
+@if ((Model.IsOwnProfile || User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Manager")) && !User.IsInRole("User"))
+{
+    <p><strong>Salary:</strong> @Model.Salary?.ToString("C")</p>
+}
+
+@if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Manager")) && !Model.IsOwnProfile)
+{
+    <form asp-action="UpdateSalary" method="post">
+    <input type="hidden" name="userId" value="@Model.User.Id" />
+    <div class="form-group">
+        <label for="salary">Salary</label>
+        <input type="number" step="0.01" min="0" id="salary" name="salary" class="form-control" value="@Model.Salary" />
+    </div>
+    <button type="submit" class="btn btn-primary">Update Salary</button>
+</form>
 }

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241126152113_SeedInitialData")]
-    partial class SeedInitialData
+    [Migration("20241128175832_RecreateDB")]
+    partial class RecreateDB
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -79,6 +79,9 @@ namespace HR_Platform.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<decimal?>("Salary")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -100,46 +103,6 @@ namespace HR_Platform.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "user-admin",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "ab8152df-86ce-46b7-86db-517133b73a20",
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "admin@hrplatform.com",
-                            EmailConfirmed = true,
-                            FirstName = "Admin",
-                            LastName = "User",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@HRPLATFORM.COM",
-                            NormalizedUserName = "ADMIN@HRPLATFORM.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEfHlBiNnUOsGDpxWmlmo0Q9iZm6JpLuiNgdn+/Xt7R+KuVluHeuFQtJp4ek0ZD0uA==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "9b2a6133-d952-4844-bb09-7b5d8a0f9898",
-                            TwoFactorEnabled = false,
-                            UserName = "admin@hrplatform.com"
-                        },
-                        new
-                        {
-                            Id = "user-manager",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "e7a163e8-619a-4ba9-b077-c566fdff5e14",
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "manager@hrplatform.com",
-                            EmailConfirmed = true,
-                            FirstName = "Manager",
-                            LastName = "User",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "MANAGER@HRPLATFORM.COM",
-                            NormalizedUserName = "MANAGER@HRPLATFORM.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEL1+e1lHMuUrwPMRKC0Y0xE3joQ2HpzPOuw4rlWyERh/aPpZ/hltdZf3txnEXJyhuA==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "cfca5c1e-6b5b-4ab7-a7e6-deda32e0baba",
-                            TwoFactorEnabled = false,
-                            UserName = "manager@hrplatform.com"
-                        });
                 });
 
             modelBuilder.Entity("JobApplication", b =>
@@ -176,26 +139,6 @@ namespace HR_Platform.Data.Migrations
                     b.HasIndex("JobPostingId");
 
                     b.ToTable("JobApplications");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            ApplicantEmail = "johndoe@example.com",
-                            ApplicantName = "John Doe",
-                            JobPostingId = 1,
-                            ResumeUrl = "https://example.com/resume/johndoe.pdf",
-                            Status = "Pending"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            ApplicantEmail = "janesmith@example.com",
-                            ApplicantName = "Jane Smith",
-                            JobPostingId = 2,
-                            ResumeUrl = "https://example.com/resume/janesmith.pdf",
-                            Status = "Approved"
-                        });
                 });
 
             modelBuilder.Entity("JobPosting", b =>
@@ -228,24 +171,6 @@ namespace HR_Platform.Data.Migrations
                     b.HasIndex("RecruiterId");
 
                     b.ToTable("JobPostings");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Develop and maintain web applications.",
-                            PostedDate = new DateTime(2024, 11, 26, 15, 21, 11, 255, DateTimeKind.Utc).AddTicks(6980),
-                            RecruiterId = "user-manager",
-                            Title = "Software Developer"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Handle recruitment and employee relations.",
-                            PostedDate = new DateTime(2024, 11, 26, 15, 21, 11, 255, DateTimeKind.Utc).AddTicks(6984),
-                            RecruiterId = "user-manager",
-                            Title = "HR Specialist"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -273,38 +198,6 @@ namespace HR_Platform.Data.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "role-admin",
-                            Name = "Admin",
-                            NormalizedName = "ADMIN"
-                        },
-                        new
-                        {
-                            Id = "role-hr",
-                            Name = "HR",
-                            NormalizedName = "HR"
-                        },
-                        new
-                        {
-                            Id = "role-recruiter",
-                            Name = "Recruiter",
-                            NormalizedName = "RECRUITER"
-                        },
-                        new
-                        {
-                            Id = "role-manager",
-                            Name = "Manager",
-                            NormalizedName = "MANAGER"
-                        },
-                        new
-                        {
-                            Id = "role-employee",
-                            Name = "Employee",
-                            NormalizedName = "EMPLOYEE"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -394,18 +287,6 @@ namespace HR_Platform.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = "user-admin",
-                            RoleId = "role-admin"
-                        },
-                        new
-                        {
-                            UserId = "user-manager",
-                            RoleId = "role-manager"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -451,20 +332,6 @@ namespace HR_Platform.Data.Migrations
                     b.HasIndex("ManagerId");
 
                     b.ToTable("Teams");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            ManagerId = "user-manager",
-                            Name = "Development Team"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            ManagerId = "user-manager",
-                            Name = "HR Team"
-                        });
                 });
 
             modelBuilder.Entity("TeamMember", b =>
