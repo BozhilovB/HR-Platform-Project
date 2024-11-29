@@ -19,6 +19,23 @@ public static class SeedData
             }
         }
 
+        var recruiterEmail = "recruiter@hrplatform.com";
+        if (await userManager.FindByEmailAsync(recruiterEmail) == null)
+        {
+            var recruiterUser = new ApplicationUser
+            {
+                UserName = recruiterEmail,
+                Email = recruiterEmail,
+                FirstName = "Recruiter",
+                LastName = "User",
+                EmailConfirmed = true,
+                Salary = 4500.50M
+            };
+
+            await userManager.CreateAsync(recruiterUser, "Recruiter@123");
+            await userManager.AddToRoleAsync(recruiterUser, "Recruiter");
+        }
+
         var adminEmail = "admin@hrplatform.com";
         var managerEmail = "manager@hrplatform.com";
         var applicantEmail = "applicant@hrplatform.com";

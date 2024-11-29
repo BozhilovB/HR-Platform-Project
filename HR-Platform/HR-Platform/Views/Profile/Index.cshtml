@@ -10,26 +10,26 @@
 
 @if (await UserManager.IsInRoleAsync(Model.User, "Manager") || await UserManager.IsInRoleAsync(Model.User, "Admin"))
 {
-    <h3>Teams @(Model.IsOwnProfile ? "You Are Managing" : $"{Model.User.FirstName} Is Managing")</h3>
+        <h3>Teams @(Model.IsOwnProfile ? "You Are Managing" : $"{Model.User.FirstName} Is Managing")</h3>
     @if (Model.ManagedTeams != null && Model.ManagedTeams.Any())
     {
-        <ul>
+                <ul>
             @foreach (var team in Model.ManagedTeams)
             {
-                <li>
+                            <li>
                     @team.Name 
-                    (Manager Since: @DateTime.UtcNow.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture))
+                                (Manager Since: @DateTime.UtcNow.ToString("MMMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture))
                     @if (Model.IsOwnProfile)
                     {
-                        <a asp-controller="Teams" asp-action="Details" asp-route-id="@team.Id" class="btn btn-primary btn-sm">View Team</a>
+                                        <a asp-controller="Teams" asp-action="Details" asp-route-id="@team.Id" class="btn btn-primary btn-sm">View Team</a>
                     }
-                </li>
+                            </li>
             }
-        </ul>
+                </ul>
     }
     else
     {
-        <p>@(Model.IsOwnProfile ? "You are not managing any teams." : $"{Model.User.FirstName} is not managing any teams.")</p>
+                <p>@(Model.IsOwnProfile ? "You are not managing any teams." : $"{Model.User.FirstName} is not managing any teams.")</p>
     }
 }
 
