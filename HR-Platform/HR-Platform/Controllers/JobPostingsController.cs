@@ -54,38 +54,48 @@ public class JobPostingsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-
     [Authorize(Roles = "Recruiter")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var jobPosting = await _context.JobPostings.FindAsync(id);
+        var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
         if (jobPosting == null)
         {
             return NotFound();
         }
 
-        return View(jobPosting);
+        var model = new JobPostingEditViewModel
+        {
+            Id = jobPosting.Id,
+            Title = jobPosting.Title,
+            Description = jobPosting.Description
+        };
+
+        return View(model);
     }
 
     [Authorize(Roles = "Recruiter")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, JobPosting jobPosting)
+    public async Task<IActionResult> Edit(int id, JobPostingEditViewModel model)
     {
-        if (id != jobPosting.Id)
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var existingJob = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
+        if (existingJob == null)
         {
             return NotFound();
         }
 
-        if (ModelState.IsValid)
-        {
-            _context.Update(jobPosting);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+        existingJob.Title = model.Title;
+        existingJob.Description = model.Description;
 
-        return View(jobPosting);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
     }
 
     [Authorize(Roles = "Recruiter")]
@@ -101,5 +111,7 @@ public class JobPostingsController : Controller
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
+
+
 
 }
