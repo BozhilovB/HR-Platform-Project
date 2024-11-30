@@ -19,184 +19,132 @@ public static class SeedData
             }
         }
 
-        var recruiterEmail = "recruiter@hrplatform.com";
-        if (await userManager.FindByEmailAsync(recruiterEmail) == null)
+        var users = new List<ApplicationUser>
         {
-            var recruiterUser = new ApplicationUser
+            new ApplicationUser
             {
-                UserName = recruiterEmail,
-                Email = recruiterEmail,
-                FirstName = "Recruiter",
-                LastName = "User",
-                EmailConfirmed = true,
-                Salary = 4500.50M
-            };
-
-            await userManager.CreateAsync(recruiterUser, "Recruiter@123");
-            await userManager.AddToRoleAsync(recruiterUser, "Recruiter");
-        }
-
-        var adminEmail = "admin@hrplatform.com";
-        var managerEmail = "manager@hrplatform.com";
-        var applicantEmail = "applicant@hrplatform.com";
-
-        if (await userManager.FindByEmailAsync(adminEmail) == null)
-        {
-            var adminUser = new ApplicationUser
-            {
-                UserName = adminEmail,
-                Email = adminEmail,
+                UserName = "admin@hrplatform.com",
+                Email = "admin@hrplatform.com",
                 FirstName = "Admin",
                 LastName = "User",
                 EmailConfirmed = true,
-                Salary = 100000M
-            };
-            await userManager.CreateAsync(adminUser, "Admin@123");
-            await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
-
-        if (await userManager.FindByEmailAsync(managerEmail) == null)
-        {
-            var managerUser = new ApplicationUser
+                Salary = 100000M,
+            },
+            new ApplicationUser
             {
-                UserName = managerEmail,
-                Email = managerEmail,
+                UserName = "recruiter@hrplatform.com",
+                Email = "recruiter@hrplatform.com",
+                FirstName = "Recruiter",
+                LastName = "User",
+                EmailConfirmed = true,
+                Salary = 4500.50M,
+            },
+            new ApplicationUser
+            {
+                UserName = "manager@hrplatform.com",
+                Email = "manager@hrplatform.com",
                 FirstName = "Manager",
                 LastName = "User",
                 EmailConfirmed = true,
-                Salary = 80000M
-            };
-            await userManager.CreateAsync(managerUser, "Manager@123");
-            await userManager.AddToRoleAsync(managerUser, "Manager");
-        }
-
-        if (await userManager.FindByEmailAsync(applicantEmail) == null)
-        {
-            var applicantUser = new ApplicationUser
+                Salary = 80000M,
+            },
+            new ApplicationUser
             {
-                UserName = applicantEmail,
-                Email = applicantEmail,
-                FirstName = "Applicant",
-                LastName = "User",
+                UserName = "user1@hrplatform.com",
+                Email = "user1@hrplatform.com",
+                FirstName = "User1",
+                LastName = "Demo",
                 EmailConfirmed = true,
-                Salary = 50000M
-            };
-            await userManager.CreateAsync(applicantUser, "Applicant@123");
-            await userManager.AddToRoleAsync(applicantUser, "Employee");
-        }
+            },
+            new ApplicationUser
+            {
+                UserName = "user2@hrplatform.com",
+                Email = "user2@hrplatform.com",
+                FirstName = "User2",
+                LastName = "Demo",
+                EmailConfirmed = true,
+            },
+            new ApplicationUser
+            {
+                UserName = "employee1@hrplatform.com",
+                Email = "employee1@hrplatform.com",
+                FirstName = "John",
+                LastName = "Doe",
+                EmailConfirmed = true,
+                Salary = 4500.20M,
+            },
+            new ApplicationUser
+            {
+                UserName = "employee2@hrplatform.com",
+                Email = "employee2@hrplatform.com",
+                FirstName = "Jane",
+                LastName = "Smith",
+                EmailConfirmed = true,
+                Salary = 4700.50M,
+            }
+        };
 
-        if (!context.Teams.Any())
+        foreach (var user in users)
         {
-            context.Teams.AddRange(
-                new Team { Name = "Development Team", ManagerId = context.Users.First(u => u.Email == managerEmail).Id },
-                new Team { Name = "HR Team", ManagerId = context.Users.First(u => u.Email == managerEmail).Id }
-            );
+            if (await userManager.FindByEmailAsync(user.Email) == null)
+            {
+                await userManager.CreateAsync(user, $"{user.FirstName}@123");
+                if (user.Email == "admin@hrplatform.com") await userManager.AddToRoleAsync(user, "Admin");
+                if (user.Email == "recruiter@hrplatform.com") await userManager.AddToRoleAsync(user, "Recruiter");
+                if (user.Email == "manager@hrplatform.com") await userManager.AddToRoleAsync(user, "Manager");
+                if (user.Email.StartsWith("user")) await userManager.AddToRoleAsync(user, "User");
+                if (user.Email.StartsWith("employee")) await userManager.AddToRoleAsync(user, "Employee");
+            }
         }
 
         if (!context.JobPostings.Any())
         {
+            var recruiter = context.Users.First(u => u.Email == "recruiter@hrplatform.com");
             context.JobPostings.AddRange(
                 new JobPosting
                 {
                     Title = "Software Developer",
                     Description = "Develop and maintain web applications.",
                     PostedDate = DateTime.UtcNow,
-                    RecruiterId = context.Users.First(u => u.Email == managerEmail).Id
+                    RecruiterId = recruiter.Id
                 },
                 new JobPosting
                 {
                     Title = "HR Specialist",
                     Description = "Handle recruitment and employee relations.",
                     PostedDate = DateTime.UtcNow,
-                    RecruiterId = context.Users.First(u => u.Email == managerEmail).Id
+                    RecruiterId = recruiter.Id
                 }
             );
 
             await context.SaveChangesAsync();
         }
 
-        var employee1 = new ApplicationUser
+        if (!context.JobApplications.Any())
         {
-            Id = "user-employee-1",
-            UserName = "employee1@hrplatform.com",
-            NormalizedUserName = "EMPLOYEE1@HRPLATFORM.COM",
-            Email = "employee1@hrplatform.com",
-            NormalizedEmail = "EMPLOYEE1@HRPLATFORM.COM",
-            EmailConfirmed = true,
-            PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
-            FirstName = "John",
-            LastName = "Doe",
-            Salary = 4500.20M
-        };
+            var job1 = context.JobPostings.First();
+            var job2 = context.JobPostings.Skip(1).First();
 
-        var employee2 = new ApplicationUser
-        {
-            Id = "user-employee-2",
-            UserName = "employee2@hrplatform.com",
-            NormalizedUserName = "EMPLOYEE2@HRPLATFORM.COM",
-            Email = "employee2@hrplatform.com",
-            NormalizedEmail = "EMPLOYEE2@HRPLATFORM.COM",
-            EmailConfirmed = true,
-            PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(null, "Employee@123"),
-            FirstName = "Jane",
-            LastName = "Smith",
-            Salary = 4700.50M
-        };
-
-        if (!context.Users.Any(u => u.Id == employee1.Id))
-        {
-            context.Users.Add(employee1);
-        }
-
-        if (!context.Users.Any(u => u.Id == employee2.Id))
-        {
-            context.Users.Add(employee2);
-        }
-
-        await context.SaveChangesAsync();
-
-        var employeeRoleId = context.Roles.FirstOrDefault(r => r.Name == "Employee")?.Id;
-        if (employeeRoleId != null)
-        {
-            if (!context.UserRoles.Any(ur => ur.UserId == employee1.Id && ur.RoleId == employeeRoleId))
-            {
-                context.UserRoles.Add(new IdentityUserRole<string>
+            context.JobApplications.AddRange(
+                new JobApplication
                 {
-                    UserId = employee1.Id,
-                    RoleId = employeeRoleId
-                });
-            }
-
-            if (!context.UserRoles.Any(ur => ur.UserId == employee2.Id && ur.RoleId == employeeRoleId))
-            {
-                context.UserRoles.Add(new IdentityUserRole<string>
+                    ApplicantName = "User1 Demo",
+                    ApplicantEmail = "user1@hrplatform.com",
+                    ResumeUrl = "https://example.com/resume/user1.pdf",
+                    Status = "Pending",
+                    JobPostingId = job1.Id
+                },
+                new JobApplication
                 {
-                    UserId = employee2.Id,
-                    RoleId = employeeRoleId
-                });
-            }
-        }
+                    ApplicantName = "User2 Demo",
+                    ApplicantEmail = "user2@hrplatform.com",
+                    ResumeUrl = "https://example.com/resume/user2.pdf",
+                    Status = "Pending",
+                    JobPostingId = job2.Id
+                }
+            );
 
-        if (!context.TeamMembers.Any(tm => tm.TeamId == 2 && tm.UserId == employee1.Id))
-        {
-            context.TeamMembers.Add(new TeamMember
-            {
-                TeamId = 2,
-                UserId = employee1.Id,
-                JoinedAt = DateTime.UtcNow.AddDays(-7)
-            });
+            await context.SaveChangesAsync();
         }
-
-        if (!context.TeamMembers.Any(tm => tm.TeamId == 2 && tm.UserId == employee2.Id))
-        {
-            context.TeamMembers.Add(new TeamMember
-            {
-                TeamId = 2,
-                UserId = employee2.Id,
-                JoinedAt = DateTime.UtcNow.AddDays(-4)
-            });
-        }
-
-        await context.SaveChangesAsync();
     }
 }

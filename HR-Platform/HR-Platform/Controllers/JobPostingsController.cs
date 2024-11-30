@@ -112,6 +112,20 @@ public class JobPostingsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = "Recruiter")]
+    public async Task<IActionResult> Applicants(int id)
+    {
+        var jobApplications = await _context.JobApplications
+            .Where(ja => ja.JobPostingId == id)
+            .ToListAsync();
+
+        if (!jobApplications.Any())
+        {
+            return View(new List<JobApplication>());
+        }
+
+        return View(jobApplications);
+    }
 
 
 }

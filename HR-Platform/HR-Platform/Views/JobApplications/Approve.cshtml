@@ -1,0 +1,35 @@
+﻿@model ApproveApplicationViewModel
+
+<h2>Approve Application</h2>
+
+<form asp-action="Approve" method="post">
+    <input type="hidden" asp-for="ApplicationId" />
+
+    <div class="form-group">
+        <label>Applicant</label>
+        <input type="text" asp-for="ApplicantName" class="form-control" readonly />
+    </div>
+
+    <div class="form-group">
+        <label>Email</label>
+        <input type="text" asp-for="ApplicantEmail" class="form-control" readonly />
+    </div>
+
+    <div class="form-group">
+        <label>Job Posting</label>
+        <input type="text" asp-for="JobPostingTitle" class="form-control" readonly />
+    </div>
+
+    <div class="form-group">
+        <label for="salary">Set Salary</label>
+        <input asp-for="Salary" class="form-control" type="number" step="0.01" />
+    </div>
+
+    <div class="form-group">
+        <label for="team">Assign Team</label>
+        <select asp-for="SelectedTeamId" asp-items="Model.Teams" class="form-control"></select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Approve</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
