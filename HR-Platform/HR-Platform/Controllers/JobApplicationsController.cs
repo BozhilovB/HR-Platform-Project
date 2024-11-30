@@ -104,5 +104,51 @@ namespace HR_Platform.Controllers
 
             return RedirectToAction("Applicants", new { id = application.JobPostingId });
         }
-    }
+		[HttpGet]
+		public async Task<IActionResult> Deny(int id)
+		{
+			var application = await _context.JobApplications
+				.Include(ja => ja.JobPosting)
+				.FirstOrDefaultAsync(ja => ja.Id == id);
+
+			if (application == null)
+			{
+				return NotFound();
+			}
+
+			var viewModel = new DenyApplicationViewModel
+			{
+				ApplicationId = id,
+				ApplicantName = application.ApplicantName,
+				ApplicantEmail = application.ApplicantEmail,
+				JobPostingTitle = application.JobPosting.Title
+			};
+
+			return View(viewModel);
+		}
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Deny(DenyApplicationViewModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return View(model);
+			}
+
+			var application = await _context.JobApplications.FindAsync(model.ApplicationId);
+			if (application == null)
+			{
+				return NotFound();
+			}
+
+			application.Status = "Denied";
+			application.DenialReason = model.DenialReason;
+
+			await _context.SaveChangesAsync();
+
+			return RedirectToAction("Applicants", new { id = application.JobPostingId });
+		}
+
+	}
 }

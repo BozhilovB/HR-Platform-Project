@@ -4,24 +4,24 @@
 
 @if (!Model.Any())
 {
-    <p>No pending applicants for this job posting.</p>
+        <p>No pending applicants for this job posting.</p>
 }
 else
 {
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Applicant Name</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Resume</th>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Applicant Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Resume</th>
                 @if (User.IsInRole("Recruiter"))
                 {
-                    <th>Actions</th>
+                            <th>Actions</th>
                 }
-            </tr>
-        </thead>
-        <tbody>
+                </tr>
+            </thead>
+            <tbody>
             @foreach (var application in Model)
             {
                 <tr>
@@ -35,11 +35,13 @@ else
                             @if (application.Status == "Pending")
                             {
                                 <a asp-controller="JobApplications" asp-action="Approve" asp-route-id="@application.Id" class="btn btn-success btn-sm">Approve</a>
+                                <a asp-controller="JobApplications" asp-action="Deny" asp-route-id="@application.Id" class="btn btn-danger btn-sm">Deny</a>
                             }
                         </td>
                     }
                 </tr>
             }
-        </tbody>
-    </table>
+
+            </tbody>
+        </table>
 }

@@ -1,8 +1,8 @@
-﻿@model ApproveApplicationViewModel
+﻿@model DenyApplicationViewModel
 
-<h2>Approve Application</h2>
+<h2>Deny Application</h2>
 
-<form asp-action="Approve" method="post">
+<form asp-action="Deny" method="post">
     <input type="hidden" asp-for="ApplicationId" />
 
     <div class="form-group">
@@ -21,15 +21,11 @@
     </div>
 
     <div class="form-group">
-        <label for="salary">Set Salary</label>
-        <input asp-for="Salary" class="form-control" type="number" step="0.01" />
+        <label for="denialReason">Denial Reason</label>
+        <textarea asp-for="DenialReason" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="DenialReason" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
-        <label for="team">Assign Team</label>
-        <select asp-for="SelectedTeamId" asp-items="Model.Teams" class="form-control"></select>
-    </div>
-
-    <button type="submit" class="btn btn-success">Approve</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-danger">Deny Application</button>
+    <a asp-action="Applicants" asp-route-id="@ViewBag.JobPostingId" class="btn btn-secondary">Cancel</a>
 </form>

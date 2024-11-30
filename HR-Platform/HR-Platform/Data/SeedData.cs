@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 public static class SeedData
 {
@@ -64,7 +65,16 @@ public static class SeedData
                 LastName = "Demo",
                 EmailConfirmed = true,
             },
-            new ApplicationUser
+			new ApplicationUser
+			{
+				UserName = "user3@hrplatform.com",
+				Email = "user3@hrplatform.com",
+				FirstName = "User3",
+				LastName = "Demo",
+				EmailConfirmed = true,
+
+			},
+			new ApplicationUser
             {
                 UserName = "employee1@hrplatform.com",
                 Email = "employee1@hrplatform.com",
@@ -134,9 +144,17 @@ public static class SeedData
                     Status = "Pending",
                     JobPostingId = job1.Id
                 },
-                new JobApplication
+				new JobApplication
+				{
+					ApplicantName = "User2 Demo",
+					ApplicantEmail = "user2@hrplatform.com",
+					ResumeUrl = "https://example.com/resume/user1.pdf",
+					Status = "Pending",
+					JobPostingId = job2.Id
+				},
+				new JobApplication
                 {
-                    ApplicantName = "User2 Demo",
+                    ApplicantName = "User3 Demo",
                     ApplicantEmail = "user2@hrplatform.com",
                     ResumeUrl = "https://example.com/resume/user2.pdf",
                     Status = "Pending",
