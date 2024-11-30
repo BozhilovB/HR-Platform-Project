@@ -150,5 +150,17 @@ namespace HR_Platform.Controllers
 			return RedirectToAction("Applicants", new { id = application.JobPostingId });
 		}
 
-	}
+        [Authorize(Roles = "Recruiter")]
+        [HttpGet]
+        public async Task<IActionResult> ApplicantLog()
+        {
+            var applications = await _context.JobApplications
+                .Include(ja => ja.JobPosting)
+                .Where(ja => ja.Status == "Denied" || ja.Status == "Approved")
+                .ToListAsync();
+
+            return View(applications);
+        }
+
+    }
 }

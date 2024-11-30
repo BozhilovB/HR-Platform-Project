@@ -1,0 +1,30 @@
+﻿@model IEnumerable<JobApplication>
+<h2>Application Logs</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Applicant Name</th>
+            <th>Email</th>
+            <th>Job Posting</th>
+            <th>Status</th>
+            <th>Reason (if Denied)</th>
+            <th>Resume</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var application in Model)
+        {
+            <tr>
+                <td>@application.ApplicantName</td>
+                <td>@application.ApplicantEmail</td>
+                <td>@application.JobPosting?.Title</td>
+                <td>@application.Status</td>
+                <td>@(application.Status == "Denied" ? application.DenialReason : "-")</td>
+                <td>
+                    <a href="@application.ResumeUrl" target="_blank" class="btn btn-info btn-sm">View Resume</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
