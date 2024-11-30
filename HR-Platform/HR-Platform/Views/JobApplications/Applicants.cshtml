@@ -2,37 +2,44 @@
 
 <h2>Applicants</h2>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Applicant Name</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Resume</th>
-            @if (User.IsInRole("Recruiter"))
-            {
-                <th>Actions</th>
-            }
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var application in Model)
-        {
+@if (!Model.Any())
+{
+    <p>No pending applicants for this job posting.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
             <tr>
-                <td>@application.ApplicantName</td>
-                <td>@application.ApplicantEmail</td>
-                <td>@application.Status</td>
-                <td><a href="@application.ResumeUrl" target="_blank" class="btn btn-info btn-sm">View Resume</a></td>
+                <th>Applicant Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Resume</th>
                 @if (User.IsInRole("Recruiter"))
                 {
-                    <td>
-                        @if (application.Status == "Pending")
-                        {
-                            <a asp-controller="JobApplications" asp-action="Approve" asp-route-id="@application.Id" class="btn btn-success btn-sm">Approve</a>
-                        }
-                    </td>
+                    <th>Actions</th>
                 }
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var application in Model)
+            {
+                <tr>
+                    <td>@application.ApplicantName</td>
+                    <td>@application.ApplicantEmail</td>
+                    <td>@application.Status</td>
+                    <td><a href="@application.ResumeUrl" target="_blank" class="btn btn-info btn-sm">View Resume</a></td>
+                    @if (User.IsInRole("Recruiter"))
+                    {
+                        <td>
+                            @if (application.Status == "Pending")
+                            {
+                                <a asp-controller="JobApplications" asp-action="Approve" asp-route-id="@application.Id" class="btn btn-success btn-sm">Approve</a>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}

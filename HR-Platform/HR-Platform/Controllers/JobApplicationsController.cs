@@ -15,10 +15,11 @@ namespace HR_Platform.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> Applicants(int id)
         {
             var jobApplications = await _context.JobApplications
-                .Where(ja => ja.JobPostingId == id)
+                .Where(ja => ja.JobPostingId == id && ja.Status != "Approved")
                 .Include(ja => ja.JobPosting)
                 .ToListAsync();
 
