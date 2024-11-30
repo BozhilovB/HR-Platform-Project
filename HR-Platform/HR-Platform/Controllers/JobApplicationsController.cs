@@ -15,26 +15,26 @@ namespace HR_Platform.Controllers
             _context = context;
         }
 
-        [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> Applicants(int id)
-        {
-            var jobApplications = await _context.JobApplications
-                .Where(ja => ja.JobPostingId == id && ja.Status != "Approved")
-                .Include(ja => ja.JobPosting)
-                .ToListAsync();
+		[Authorize(Roles = "Recruiter")]
+		public async Task<IActionResult> Applicants(int id)
+		{
+			var jobApplications = await _context.JobApplications
+				.Where(ja => ja.JobPostingId == id && ja.Status != "Denied" && ja.Status != "Approved")
+				.Include(ja => ja.JobPosting)
+				.ToListAsync();
 
-            if (!jobApplications.Any())
-            {
-                return View(new List<JobApplication>());
-            }
+			if (!jobApplications.Any())
+			{
+				return View(new List<JobApplication>());
+			}
 
-            ViewBag.JobPostingId = id;
-            ViewBag.JobPostingTitle = jobApplications.FirstOrDefault()?.JobPosting.Title;
+			ViewBag.JobPostingId = id;
+			ViewBag.JobPostingTitle = jobApplications.FirstOrDefault()?.JobPosting.Title;
 
-            return View(jobApplications);
-        }
+			return View(jobApplications);
+		}
 
-        [HttpGet]
+		[HttpGet]
         public async Task<IActionResult> Approve(int id)
         {
             var application = await _context.JobApplications
