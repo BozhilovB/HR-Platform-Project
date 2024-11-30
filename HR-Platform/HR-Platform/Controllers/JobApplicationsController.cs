@@ -150,16 +150,49 @@ namespace HR_Platform.Controllers
 			return RedirectToAction("Applicants", new { id = application.JobPostingId });
 		}
 
-        [Authorize(Roles = "Recruiter")]
-        [HttpGet]
-        public async Task<IActionResult> ApplicantLog()
+        [Authorize(Roles = "Recruiter,Admin")]
+        public async Task<IActionResult> ApplicantLog(string? title, string? postedDate, string? recruiter, string? applicantName)
         {
-            var applications = await _context.JobApplications
+            var jobApplications = _context.JobApplications
                 .Include(ja => ja.JobPosting)
-                .Where(ja => ja.Status == "Denied" || ja.Status == "Approved")
-                .ToListAsync();
+                .ThenInclude(jp => jp.Recruiter)
+                .Where(ja => ja.Status == "Approved" || ja.Status == "Denied");
 
-            return View(applications);
+            if (!string.IsNullOrEmpty(title))
+            {
+                title = title.Trim();
+                jobApplications = jobApplications.Where(ja => EF.Functions.Like(ja.JobPosting.Title, $"%{title}%"));
+            }
+
+            if (!string.IsNullOrEmpty(postedDate) && DateTime.TryParse(postedDate, out var parsedDate))
+            {
+                jobApplications = jobApplications.Where(ja => ja.JobPosting.PostedDate.Date == parsedDate.Date);
+            }
+
+            if (!string.IsNullOrEmpty(recruiter))
+            {
+                recruiter = recruiter.Trim().ToLower();
+                jobApplications = jobApplications.Where(ja =>
+                    EF.Functions.Like(ja.JobPosting.Recruiter.FirstName.ToLower(), $"%{recruiter}%") ||
+                    EF.Functions.Like(ja.JobPosting.Recruiter.LastName.ToLower(), $"%{recruiter}%") ||
+                    EF.Functions.Like(ja.JobPosting.Recruiter.Email.ToLower(), $"%{recruiter}%") ||
+                    EF.Functions.Like((ja.JobPosting.Recruiter.FirstName + " " + ja.JobPosting.Recruiter.LastName).ToLower(), $"%{recruiter}%"));
+            }
+
+            if (!string.IsNullOrEmpty(applicantName))
+            {
+                applicantName = applicantName.Trim().ToLower();
+                jobApplications = jobApplications.Where(ja =>
+                    EF.Functions.Like(ja.ApplicantName.ToLower(), $"%{applicantName}%"));
+            }
+
+            ViewData["TitleFilter"] = title;
+            ViewData["PostedDateFilter"] = postedDate;
+            ViewData["RecruiterFilter"] = recruiter;
+            ViewData["ApplicantNameFilter"] = applicantName;
+
+            var filteredApplications = await jobApplications.ToListAsync();
+            return View(filteredApplications);
         }
 
     }

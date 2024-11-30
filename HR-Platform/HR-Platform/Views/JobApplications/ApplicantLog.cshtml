@@ -1,12 +1,40 @@
 ﻿@model IEnumerable<JobApplication>
+
 <h2>Application Logs</h2>
 
-<table class="table table-bordered">
+<form method="get" asp-action="ApplicantLog">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="title">Job Title</label>
+            <input type="text" name="title" class="form-control" value="@ViewData["TitleFilter"]" />
+        </div>
+        <div class="col-md-3">
+            <label for="postedDate">Posted Date</label>
+            <input type="date" name="postedDate" class="form-control" value="@ViewData["PostedDateFilter"]" />
+        </div>
+        <div class="col-md-3">
+            <label for="recruiter">Recruiter</label>
+            <input type="text" name="recruiter" class="form-control" value="@ViewData["RecruiterFilter"]" />
+        </div>
+        <div class="col-md-3">
+            <label for="applicantName">Applicant Name</label>
+            <input type="text" name="applicantName" class="form-control" value="@ViewData["ApplicantNameFilter"]" />
+        </div>
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="@Url.Action("ApplicantLog", "JobApplications")" class="btn btn-secondary">Clear Filters</a>
+    </div>
+</form>
+
+<table class="table table-bordered mt-3">
     <thead>
         <tr>
             <th>Applicant Name</th>
             <th>Email</th>
             <th>Job Posting</th>
+            <th>Date Posted</th>
+            <th>Recruiter</th>
             <th>Status</th>
             <th>Reason (if Denied)</th>
             <th>Resume</th>
@@ -19,6 +47,8 @@
                 <td>@application.ApplicantName</td>
                 <td>@application.ApplicantEmail</td>
                 <td>@application.JobPosting?.Title</td>
+                <td>@application.JobPosting?.PostedDate.ToString("MMMM dd, yyyy")</td>
+                <td>@($"{application.JobPosting?.Recruiter.FirstName} {application.JobPosting?.Recruiter.LastName}")</td>
                 <td>@application.Status</td>
                 <td>@(application.Status == "Denied" ? application.DenialReason : "-")</td>
                 <td>
