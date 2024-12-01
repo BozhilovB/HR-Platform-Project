@@ -32,6 +32,15 @@ public static class SeedData
             },
             new ApplicationUser
             {
+                UserName = "hr@hrplatform.com",
+                Email = "hr@hrplatform.com",
+                FirstName = "Hr",
+                LastName = "User",
+                EmailConfirmed = true,
+                Salary = 100000M,
+            },
+            new ApplicationUser
+            {
                 UserName = "recruiter@hrplatform.com",
                 Email = "recruiter@hrplatform.com",
                 FirstName = "Recruiter",
@@ -100,6 +109,7 @@ public static class SeedData
                 if (user.Email == "admin@hrplatform.com") await userManager.AddToRoleAsync(user, "Admin");
                 if (user.Email == "recruiter@hrplatform.com") await userManager.AddToRoleAsync(user, "Recruiter");
                 if (user.Email == "manager@hrplatform.com") await userManager.AddToRoleAsync(user, "Manager");
+                if (user.Email == "hr@hrplatform.com") await userManager.AddToRoleAsync(user, "HR");
                 if (user.Email.StartsWith("user")) await userManager.AddToRoleAsync(user, "User");
                 if (user.Email.StartsWith("employee")) await userManager.AddToRoleAsync(user, "Employee");
             }

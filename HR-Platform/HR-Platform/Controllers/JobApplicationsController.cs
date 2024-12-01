@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HR_Platform.Controllers
 {
-    [Authorize(Roles = "Recruiter")]
+    [Authorize]
     public class JobApplicationsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,27 +18,27 @@ namespace HR_Platform.Controllers
             _userManager = userManager;
         }
 
+        [Authorize(Roles = "Recruiter,Admin")]
+        public async Task<IActionResult> Applicants(int id)
+        {
+            var jobApplications = await _context.JobApplications
+                .Where(ja => ja.JobPostingId == id && ja.Status != "Denied" && ja.Status != "Approved")
+                .Include(ja => ja.JobPosting)
+                .ToListAsync();
 
-        [Authorize(Roles = "Recruiter")]
-		public async Task<IActionResult> Applicants(int id)
-		{
-			var jobApplications = await _context.JobApplications
-				.Where(ja => ja.JobPostingId == id && ja.Status != "Denied" && ja.Status != "Approved")
-				.Include(ja => ja.JobPosting)
-				.ToListAsync();
+            if (!jobApplications.Any())
+            {
+                return View(new List<JobApplication>());
+            }
 
-			if (!jobApplications.Any())
-			{
-				return View(new List<JobApplication>());
-			}
+            ViewBag.JobPostingId = id;
+            ViewBag.JobPostingTitle = jobApplications.FirstOrDefault()?.JobPosting.Title;
 
-			ViewBag.JobPostingId = id;
-			ViewBag.JobPostingTitle = jobApplications.FirstOrDefault()?.JobPosting.Title;
+            return View(jobApplications);
+        }
 
-			return View(jobApplications);
-		}
-
-		[HttpGet]
+        [Authorize(Roles = "Recruiter,Admin")]
+        [HttpGet]
         public async Task<IActionResult> Approve(int id)
         {
             var application = await _context.JobApplications
@@ -68,6 +68,7 @@ namespace HR_Platform.Controllers
             return View("~/Views/JobApplications/Approve.cshtml", viewModel);
         }
 
+        [Authorize(Roles = "Recruiter,Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(ApproveApplicationViewModel model)
@@ -119,53 +120,55 @@ namespace HR_Platform.Controllers
             return RedirectToAction("Applicants", new { id = application.JobPostingId });
         }
 
+        [Authorize(Roles = "Recruiter,Admin")]
         [HttpGet]
-		public async Task<IActionResult> Deny(int id)
-		{
-			var application = await _context.JobApplications
-				.Include(ja => ja.JobPosting)
-				.FirstOrDefaultAsync(ja => ja.Id == id);
+        public async Task<IActionResult> Deny(int id)
+        {
+            var application = await _context.JobApplications
+                .Include(ja => ja.JobPosting)
+                .FirstOrDefaultAsync(ja => ja.Id == id);
 
-			if (application == null)
-			{
-				return NotFound();
-			}
+            if (application == null)
+            {
+                return NotFound();
+            }
 
-			var viewModel = new DenyApplicationViewModel
-			{
-				ApplicationId = id,
-				ApplicantName = application.ApplicantName,
-				ApplicantEmail = application.ApplicantEmail,
-				JobPostingTitle = application.JobPosting.Title
-			};
+            var viewModel = new DenyApplicationViewModel
+            {
+                ApplicationId = id,
+                ApplicantName = application.ApplicantName,
+                ApplicantEmail = application.ApplicantEmail,
+                JobPostingTitle = application.JobPosting.Title
+            };
 
-			return View(viewModel);
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Deny(DenyApplicationViewModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				return View(model);
-			}
-
-			var application = await _context.JobApplications.FindAsync(model.ApplicationId);
-			if (application == null)
-			{
-				return NotFound();
-			}
-
-			application.Status = "Denied";
-			application.DenialReason = model.DenialReason;
-
-			await _context.SaveChangesAsync();
-
-			return RedirectToAction("Applicants", new { id = application.JobPostingId });
-		}
+            return View(viewModel);
+        }
 
         [Authorize(Roles = "Recruiter,Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deny(DenyApplicationViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var application = await _context.JobApplications.FindAsync(model.ApplicationId);
+            if (application == null)
+            {
+                return NotFound();
+            }
+
+            application.Status = "Denied";
+            application.DenialReason = model.DenialReason;
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Applicants", new { id = application.JobPostingId });
+        }
+
+        [Authorize(Roles = "Recruiter,Admin,HR")]
         public async Task<IActionResult> ApplicantLog(string? title, string? postedDate, string? recruiter, string? applicantName)
         {
             var jobApplications = _context.JobApplications
@@ -209,6 +212,5 @@ namespace HR_Platform.Controllers
             var filteredApplications = await jobApplications.ToListAsync();
             return View(filteredApplications);
         }
-
     }
 }
