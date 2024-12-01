@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,13 +10,16 @@ namespace HR_Platform.Controllers
     public class JobApplicationsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public JobApplicationsController(ApplicationDbContext context)
+        public JobApplicationsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-		[Authorize(Roles = "Recruiter")]
+
+        [Authorize(Roles = "Recruiter")]
 		public async Task<IActionResult> Applicants(int id)
 		{
 			var jobApplications = await _context.JobApplications
@@ -86,6 +90,16 @@ namespace HR_Platform.Controllers
                 return NotFound();
             }
 
+            if (await _userManager.IsInRoleAsync(applicant, "User"))
+            {
+                await _userManager.RemoveFromRoleAsync(applicant, "User");
+            }
+
+            if (!await _userManager.IsInRoleAsync(applicant, "Employee"))
+            {
+                await _userManager.AddToRoleAsync(applicant, "Employee");
+            }
+
             applicant.Salary = model.Salary;
             applicant.Teams.Add(new TeamMember
             {
@@ -104,7 +118,8 @@ namespace HR_Platform.Controllers
 
             return RedirectToAction("Applicants", new { id = application.JobPostingId });
         }
-		[HttpGet]
+
+        [HttpGet]
 		public async Task<IActionResult> Deny(int id)
 		{
 			var application = await _context.JobApplications
