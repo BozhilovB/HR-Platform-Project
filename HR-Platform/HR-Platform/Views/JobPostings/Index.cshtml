@@ -1,12 +1,21 @@
-﻿@using Microsoft.AspNetCore.Identity
-@model IEnumerable<JobPosting>
+﻿@model IEnumerable<JobPosting>
+@using Microsoft.AspNetCore.Identity
 @inject UserManager<ApplicationUser> UserManager
 
 <h2>Job Postings</h2>
 
-@if (User.IsInRole("Recruiter") || User.IsInRole("Admin") || User.IsInRole("HR"))
+@if (TempData["ErrorMessage"] != null)
 {
-    <a asp-controller="JobApplications" asp-action="ApplicantLog" class="btn btn-secondary">View Logs</a>
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
 }
 
 <table class="table table-bordered">
@@ -36,6 +45,12 @@
                         <a asp-controller="JobPostings" asp-action="Edit" asp-route-id="@job.Id" class="btn btn-warning btn-sm">Edit</a>
                         <a asp-controller="JobPostings" asp-action="Delete" asp-route-id="@job.Id" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this job posting?');">Delete</a>
                         <a asp-controller="JobApplications" asp-action="Applicants" asp-route-id="@job.Id" class="btn btn-info btn-sm">View Applicants</a>
+                    </td>
+                }
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <td>
+                        <a asp-controller="JobApplications" asp-action="Apply" asp-route-id="@job.Id" class="btn btn-success btn-sm">Apply</a>
                     </td>
                 }
             </tr>

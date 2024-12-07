@@ -212,5 +212,94 @@ namespace HR_Platform.Controllers
             var filteredApplications = await jobApplications.ToListAsync();
             return View(filteredApplications);
         }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Apply(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                TempData["ErrorMessage"] = "Unable to find your user information.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            var hasPendingApplication = await _context.JobApplications
+                .AnyAsync(ja => ja.ApplicantEmail.ToLower() == currentUser.Email.ToLower() && ja.Status == "Pending");
+
+            if (hasPendingApplication)
+            {
+                TempData["ErrorMessage"] = "You already have a pending application. Please wait for it to be processed before applying for another job.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
+
+            if (jobPosting == null)
+            {
+                TempData["ErrorMessage"] = "Job posting not found.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            ViewBag.JobPostingTitle = jobPosting.Title;
+
+            var viewModel = new ApplyJobViewModel
+            {
+                JobPostingId = id
+            };
+
+            return View(viewModel);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Apply(ApplyJobViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Invalid data submitted. Please check your inputs.";
+                return View(model);
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                TempData["ErrorMessage"] = "Unable to find your user information.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            var hasPendingApplication = await _context.JobApplications
+                .AnyAsync(ja => ja.ApplicantEmail.ToLower() == currentUser.Email.ToLower() && ja.Status == "Pending");
+
+            if (hasPendingApplication)
+            {
+                TempData["ErrorMessage"] = "You already have a pending application.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == model.JobPostingId);
+
+            if (jobPosting == null)
+            {
+                TempData["ErrorMessage"] = "Job posting not found.";
+                return RedirectToAction("Index", "JobPostings");
+            }
+
+            var jobApplication = new JobApplication
+            {
+                ApplicantName = $"{currentUser.FirstName} {currentUser.LastName}",
+                ApplicantEmail = currentUser.Email,
+                ResumeUrl = model.ResumeUrl,
+                Status = "Pending",
+                JobPostingId = jobPosting.Id
+            };
+
+            _context.JobApplications.Add(jobApplication);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your application has been submitted successfully.";
+            return RedirectToAction("Index", "JobPostings");
+        }
     }
 }

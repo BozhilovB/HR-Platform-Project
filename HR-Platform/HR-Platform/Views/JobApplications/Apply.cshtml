@@ -1,0 +1,22 @@
+﻿@model ApplyJobViewModel
+
+<h2>Apply for Job: @ViewBag.JobPostingTitle</h2>
+
+<form asp-action="Apply" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="JobPostingId" />
+
+    <div class="form-group">
+        <label for="resumeUrl">Resume URL</label>
+        <input asp-for="ResumeUrl" class="form-control" placeholder="Enter the URL of your resume" />
+        <span asp-validation-for="ResumeUrl" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Application</button>
+    <a asp-action="Index" asp-controller="JobPostings" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}
