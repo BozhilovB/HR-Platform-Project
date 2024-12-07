@@ -10,6 +10,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TeamMember> TeamMembers { get; set; }
     public DbSet<JobPosting> JobPostings { get; set; }
     public DbSet<JobApplication> JobApplications { get; set; }
+    public DbSet<LeaveRequest> LeaveRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
