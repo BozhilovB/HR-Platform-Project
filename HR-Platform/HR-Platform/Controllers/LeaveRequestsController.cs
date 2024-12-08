@@ -15,18 +15,21 @@ public class LeaveRequestsController : Controller
         _userManager = userManager;
     }
 
+    [Authorize(Roles = "Employee,Manager")]
     public async Task<IActionResult> Index()
     {
         var currentUser = await _userManager.GetUserAsync(User);
-
         if (currentUser == null)
         {
             TempData["ErrorMessage"] = "Unable to find your user information.";
             return RedirectToAction("Index", "Home");
         }
 
+        var today = DateTime.UtcNow.Date;
+
         var leaveRequests = await _context.LeaveRequests
-            .Where(lr => lr.EmployeeId == currentUser.Id)
+            .Where(lr => lr.EmployeeId == currentUser.Id && lr.EndDate >= today)
+            .OrderBy(lr => lr.StartDate)
             .ToListAsync();
 
         return View(leaveRequests);

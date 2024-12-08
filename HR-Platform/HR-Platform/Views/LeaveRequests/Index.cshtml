@@ -1,8 +1,12 @@
-﻿@{
-    ViewData["Title"] = "Leaves";
+﻿@using Microsoft.AspNetCore.Identity
+@model IEnumerable<LeaveRequest>
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "My Leaves";
 }
 
-<h2>Leaves</h2>
+<h2>My Leave Requests</h2>
 
 <div class="alert alert-danger" role="alert" style="display:@(TempData["ErrorMessage"] != null ? "block" : "none");">
     @TempData["ErrorMessage"]
@@ -12,14 +16,34 @@
     @TempData["SuccessMessage"]
 </div>
 
-<p>Welcome to the Leave Requests section. You can view or manage your leave requests here.</p>
+@if (Model == null || !Model.Any())
+{
+    <p>You have no active or pending leave requests.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var leave in Model)
+            {
+                <tr>
+                    <td>@leave.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@leave.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@leave.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @if (User.IsInRole("Employee"))
 {
     <a asp-action="Create" class="btn btn-primary">Request Leave</a>
-}
-
-@if (User.IsInRole("Manager"))
-{
-    <a asp-action="Review" class="btn btn-secondary">Review Leave Requests</a>
 }
