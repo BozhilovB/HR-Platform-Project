@@ -43,11 +43,11 @@ else
     </table>
 }
 
-@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+@if (User.IsInRole("Employee") || User.IsInRole("Manager") || User.IsInRole("Admin") || User.IsInRole("HR") || User.IsInRole("Recruiter"))
 {
     <a asp-action="Create" class="btn btn-primary">Request Leave</a>
 }
-@if (User.IsInRole("Manager"))
+@if (User.IsInRole("Manager") || User.IsInRole("Admin"))
 {
     <a asp-action="Review" class="btn btn-secondary">Review Leave Requests</a>
 }

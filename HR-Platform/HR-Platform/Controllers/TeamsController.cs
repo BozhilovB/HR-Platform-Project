@@ -111,7 +111,6 @@ public class TeamsController : Controller
         {
             try
             {
-                // Save the new team
                 _context.Teams.Add(team);
                 await _context.SaveChangesAsync();
 
@@ -157,11 +156,6 @@ public class TeamsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-
-
-
-
-
     private async Task PopulateManagersDropdown(string? selectedManagerId = null)
     {
         var managerRoleId = await _context.Roles
@@ -178,7 +172,4 @@ public class TeamsController : Controller
 
         ViewData["Managers"] = new SelectList(managerList, "Id", "UserName", selectedManagerId);
     }
-
-
-
 }

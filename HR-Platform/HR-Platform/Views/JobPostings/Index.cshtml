@@ -25,7 +25,7 @@
             <th>Description</th>
             <th>Posted Date</th>
             <th>Recruiter</th>
-            @if (User.IsInRole("Recruiter"))
+            @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
             {
                 <th>Actions</th>
             }
@@ -39,7 +39,7 @@
                 <td>@job.Description</td>
                 <td>@job.PostedDate.ToString("MMMM dd, yyyy")</td>
                 <td>@job.Recruiter?.Email</td>
-                @if (User.IsInRole("Recruiter"))
+                @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
                 {
                     <td>
                         <a asp-controller="JobPostings" asp-action="Edit" asp-route-id="@job.Id" class="btn btn-warning btn-sm">Edit</a>
@@ -58,7 +58,7 @@
     </tbody>
 </table>
 
-@if (User.IsInRole("Recruiter"))
+@if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
 {
     <a asp-controller="JobPostings" asp-action="Create" class="btn btn-success">Create New Job Posting</a>
 }

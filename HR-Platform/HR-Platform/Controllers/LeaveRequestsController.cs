@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-[Authorize(Roles = "Employee,Manager")]
+[Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
 public class LeaveRequestsController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -15,7 +15,7 @@ public class LeaveRequestsController : Controller
         _userManager = userManager;
     }
 
-    [Authorize(Roles = "Employee,Manager")]
+    [Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
     public async Task<IActionResult> Index()
     {
         var currentUser = await _userManager.GetUserAsync(User);
@@ -43,7 +43,7 @@ public class LeaveRequestsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Employee")]
+    [Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
     public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
     {
         if (!ModelState.IsValid)

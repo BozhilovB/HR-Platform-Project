@@ -21,14 +21,14 @@ public class JobPostingsController : Controller
         return View(jobPostings);
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     [HttpGet]
     public IActionResult Create()
     {
         return View();
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(JobPostingCreateViewModel model)
@@ -54,7 +54,7 @@ public class JobPostingsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -74,7 +74,7 @@ public class JobPostingsController : Controller
         return View(model);
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, JobPostingEditViewModel model)
@@ -98,7 +98,7 @@ public class JobPostingsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var jobPosting = await _context.JobPostings.FindAsync(id);
@@ -112,7 +112,7 @@ public class JobPostingsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Roles = "Recruiter")]
+    [Authorize(Roles = "Recruiter,Admin")]
     public async Task<IActionResult> Applicants(int id)
     {
         var jobApplications = await _context.JobApplications
@@ -126,6 +126,4 @@ public class JobPostingsController : Controller
 
         return View(jobApplications);
     }
-
-
 }

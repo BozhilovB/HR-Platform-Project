@@ -90,35 +90,4 @@ public class ProfileController : Controller
 
         return RedirectToAction("Index", new { id = userId });
     }
-
-    [Authorize(Roles = "Recruiter")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(JobPosting jobPosting)
-    {
-        if (!ModelState.IsValid)
-        {
-            foreach (var key in ModelState.Keys)
-            {
-                var errors = ModelState[key]?.Errors;
-                if (errors != null)
-                {
-                    foreach (var error in errors)
-                    {
-                        Console.WriteLine($"Error for {key}: {error.ErrorMessage}");
-                    }
-                }
-            }
-            return View(jobPosting);
-        }
-
-        jobPosting.PostedDate = DateTime.UtcNow;
-        jobPosting.RecruiterId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-        _context.JobPostings.Add(jobPosting);
-        await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
-    }
-
-
 }

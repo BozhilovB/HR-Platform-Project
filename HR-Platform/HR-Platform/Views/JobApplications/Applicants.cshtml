@@ -15,7 +15,7 @@ else
                     <th>Email</th>
                     <th>Status</th>
                     <th>Resume</th>
-                @if (User.IsInRole("Recruiter"))
+                @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
                 {
                             <th>Actions</th>
                 }
@@ -29,7 +29,7 @@ else
                     <td>@application.ApplicantEmail</td>
                     <td>@application.Status</td>
                     <td><a href="@application.ResumeUrl" target="_blank" class="btn btn-info btn-sm">View Resume</a></td>
-                    @if (User.IsInRole("Recruiter"))
+                    @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
                     {
                         <td>
                             @if (application.Status == "Pending")
