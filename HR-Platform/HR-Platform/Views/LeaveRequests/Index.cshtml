@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Leaves";
+}
+
+<h2>Leaves</h2>
+
+<p>Welcome to the Leave Requests section. You can view or manage your leave requests here.</p>
+
+@if (User.IsInRole("Employee"))
+{
+    <a asp-action="Create" class="btn btn-primary">Request Leave</a>
+}
+
+@if (User.IsInRole("Manager"))
+{
+    <a asp-action="Review" class="btn btn-secondary">Review Leave Requests</a>
+}
