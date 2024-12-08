@@ -1,0 +1,51 @@
+﻿@model IEnumerable<LeaveRequest>
+
+<h2>Team Leave Requests</h2>
+
+<div class="alert alert-danger" role="alert" style="display:@(TempData["ErrorMessage"] != null ? "block" : "none");">
+    @TempData["ErrorMessage"]
+</div>
+
+<div class="alert alert-success" role="alert" style="display:@(TempData["SuccessMessage"] != null ? "block" : "none");">
+    @TempData["SuccessMessage"]
+</div>
+
+@if (!Model.Any())
+{
+    <p>No pending leave requests to review.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Employee Name</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var leave in Model)
+            {
+                <tr>
+                    <td>@leave.Employee.FirstName @leave.Employee.LastName</td>
+                    <td>@leave.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@leave.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@leave.Status</td>
+                    <td>
+                        <form asp-action="ApproveReject" method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@leave.Id" />
+                            <button type="submit" name="action" value="Approve" class="btn btn-success btn-sm">Approve</button>
+                        </form>
+                        <form asp-action="ApproveReject" method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="@leave.Id" />
+                            <button type="submit" name="action" value="Reject" class="btn btn-danger btn-sm">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

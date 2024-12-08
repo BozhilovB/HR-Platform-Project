@@ -35,7 +35,7 @@ else
             {
                 <tr>
                     <td>@leave.StartDate.ToString("yyyy-MM-dd")</td>
-                    <td>@leave.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@leave.EndDate.AddDays(-1).ToString("yyyy-MM-dd")</td>
                     <td>@leave.Status</td>
                 </tr>
             }
@@ -43,7 +43,11 @@ else
     </table>
 }
 
-@if (User.IsInRole("Employee"))
+@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
 {
     <a asp-action="Create" class="btn btn-primary">Request Leave</a>
+}
+@if (User.IsInRole("Manager"))
+{
+    <a asp-action="Review" class="btn btn-secondary">Review Leave Requests</a>
 }

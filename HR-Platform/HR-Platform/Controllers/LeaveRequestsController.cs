@@ -81,21 +81,6 @@ public class LeaveRequestsController : Controller
             return RedirectToAction("Index");
         }
 
-        var overlappingTeamRequests = await _context.LeaveRequests
-            .Where(lr =>
-                lr.TeamId == teamMember.TeamId &&
-                lr.Status == "Approved" &&
-                lr.StartDate <= model.EndDate &&
-                lr.EndDate >= model.StartDate)
-            .CountAsync();
-
-        var teamSize = await _context.TeamMembers.CountAsync(tm => tm.TeamId == teamMember.TeamId);
-        if (teamSize > 0 && overlappingTeamRequests >= Math.Ceiling(teamSize * 0.05))
-        {
-            TempData["ErrorMessage"] = "Cannot request leave. Too many team members are on leave during this period.";
-            return RedirectToAction("Index");
-        }
-
         var leaveRequest = new LeaveRequest
         {
             EmployeeId = currentUser.Id,
@@ -111,5 +96,56 @@ public class LeaveRequestsController : Controller
 
         TempData["SuccessMessage"] = "Your leave request has been submitted successfully.";
         return RedirectToAction("Index");
+    }
+
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> Review()
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser == null)
+        {
+            TempData["ErrorMessage"] = "Unable to find your user information.";
+            return RedirectToAction("Index");
+        }
+
+        var leaveRequests = await _context.LeaveRequests
+            .Include(lr => lr.Employee)
+            .Where(lr => lr.ManagerId == currentUser.Id && lr.Status == "Pending")
+            .ToListAsync();
+
+        return View(leaveRequests);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Manager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveReject(int id, string action)
+    {
+        var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+
+        if (leaveRequest == null)
+        {
+            TempData["ErrorMessage"] = "Leave request not found.";
+            return RedirectToAction("Review");
+        }
+
+        if (leaveRequest.ManagerId != (await _userManager.GetUserAsync(User)).Id)
+        {
+            TempData["ErrorMessage"] = "You are not authorized to process this leave request.";
+            return RedirectToAction("Review");
+        }
+
+        if (action == "Approve")
+        {
+            leaveRequest.Status = "Approved";
+        }
+        else if (action == "Reject")
+        {
+            leaveRequest.Status = "Rejected";
+        }
+
+        await _context.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"Leave request has been {leaveRequest.Status.ToLower()} successfully.";
+        return RedirectToAction("Review");
     }
 }
