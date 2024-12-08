@@ -4,6 +4,14 @@
 
 <h2>Leaves</h2>
 
+<div class="alert alert-danger" role="alert" style="display:@(TempData["ErrorMessage"] != null ? "block" : "none");">
+    @TempData["ErrorMessage"]
+</div>
+
+<div class="alert alert-success" role="alert" style="display:@(TempData["SuccessMessage"] != null ? "block" : "none");">
+    @TempData["SuccessMessage"]
+</div>
+
 <p>Welcome to the Leave Requests section. You can view or manage your leave requests here.</p>
 
 @if (User.IsInRole("Employee"))
