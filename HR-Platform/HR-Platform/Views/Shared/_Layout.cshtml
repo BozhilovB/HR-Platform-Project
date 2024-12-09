@@ -30,23 +30,27 @@
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Profile" asp-action="Index" asp-route-id="@UserManager.GetUserId(User)">My Profile</a>
                                 </li>
                             }
-
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="JobPostings" asp-action="Index">Job Postings</a>
+                        </li>
                         @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("HR") || User.IsInRole("Recruiter"))
                             {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Teams" asp-action="Index">Teams</a>
                             </li>
                             }
-                        @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+                        @if (User.IsInRole("Employee") || User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("HR") || User.IsInRole("Recruiter"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="LeaveRequests" asp-action="Index">Leaves</a>
                             </li>
                         }
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="JobPostings" asp-action="Index">Job Postings</a>
-                        </li>
-
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">Admin Panel</a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
