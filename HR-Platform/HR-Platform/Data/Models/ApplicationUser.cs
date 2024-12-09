@@ -19,5 +19,4 @@ public class ApplicationUser : IdentityUser
     public decimal? Salary { get; set; }
 
     public ICollection<TeamMember> Teams { get; set; } = new List<TeamMember>();
-
 }
