@@ -44,61 +44,66 @@ public class LeaveRequestsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
-    public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
+	public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
+	{
+		if (model.EndDate < model.StartDate)
+		{
+			ModelState.AddModelError("EndDate", "End Date cannot be before Start Date.");
+		}
 
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser == null)
-        {
-            TempData["ErrorMessage"] = "Unable to find your user information.";
-            return RedirectToAction("Index");
-        }
+		if (!ModelState.IsValid)
+		{
+			return View(model);
+		}
 
-        var teamMember = await _context.TeamMembers
-            .Include(tm => tm.Team)
-            .FirstOrDefaultAsync(tm => tm.UserId == currentUser.Id);
+		var currentUser = await _userManager.GetUserAsync(User);
+		if (currentUser == null)
+		{
+			TempData["ErrorMessage"] = "Unable to find your user information.";
+			return RedirectToAction("Index");
+		}
 
-        if (teamMember == null)
-        {
-            TempData["ErrorMessage"] = "You are not part of any team.";
-            return RedirectToAction("Index");
-        }
+		var teamMember = await _context.TeamMembers
+			.Include(tm => tm.Team)
+			.FirstOrDefaultAsync(tm => tm.UserId == currentUser.Id);
 
-        var hasOverlappingRequests = await _context.LeaveRequests
-            .Where(lr =>
-                lr.EmployeeId == currentUser.Id &&
-                lr.StartDate <= model.EndDate &&
-                lr.EndDate >= model.StartDate)
-            .AnyAsync();
+		if (teamMember == null)
+		{
+			TempData["ErrorMessage"] = "You are not part of any team.";
+			return RedirectToAction("Index");
+		}
 
-        if (hasOverlappingRequests)
-        {
-            TempData["ErrorMessage"] = "You already have a leave request overlapping with the selected dates.";
-            return RedirectToAction("Index");
-        }
+		var hasOverlappingRequests = await _context.LeaveRequests
+			.Where(lr =>
+				lr.EmployeeId == currentUser.Id &&
+				lr.StartDate <= model.EndDate &&
+				lr.EndDate >= model.StartDate)
+			.AnyAsync();
 
-        var leaveRequest = new LeaveRequest
-        {
-            EmployeeId = currentUser.Id,
-            TeamId = teamMember.TeamId,
-            StartDate = model.StartDate,
-            EndDate = model.EndDate.AddDays(1),
-            Status = "Pending",
-            ManagerId = teamMember.Team.ManagerId
-        };
+		if (hasOverlappingRequests)
+		{
+			TempData["ErrorMessage"] = "You already have a leave request overlapping with the selected dates.";
+			return RedirectToAction("Index");
+		}
 
-        _context.LeaveRequests.Add(leaveRequest);
-        await _context.SaveChangesAsync();
+		var leaveRequest = new LeaveRequest
+		{
+			EmployeeId = currentUser.Id,
+			TeamId = teamMember.TeamId,
+			StartDate = model.StartDate,
+			EndDate = model.EndDate,
+			Status = "Pending",
+			ManagerId = teamMember.Team.ManagerId
+		};
 
-        TempData["SuccessMessage"] = "Your leave request has been submitted successfully.";
-        return RedirectToAction("Index");
-    }
+		_context.LeaveRequests.Add(leaveRequest);
+		await _context.SaveChangesAsync();
 
-    [Authorize(Roles = "Manager")]
+		TempData["SuccessMessage"] = "Your leave request has been submitted successfully.";
+		return RedirectToAction("Index");
+	}
+
+	[Authorize(Roles = "Manager")]
     public async Task<IActionResult> Review()
     {
         var currentUser = await _userManager.GetUserAsync(User);
