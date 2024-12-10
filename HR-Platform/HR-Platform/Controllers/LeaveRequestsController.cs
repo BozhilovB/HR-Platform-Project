@@ -103,7 +103,7 @@ public class LeaveRequestsController : Controller
 		return RedirectToAction("Index");
 	}
 
-	[Authorize(Roles = "Manager")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Review()
     {
         var currentUser = await _userManager.GetUserAsync(User);
@@ -115,7 +115,8 @@ public class LeaveRequestsController : Controller
 
         var leaveRequests = await _context.LeaveRequests
             .Include(lr => lr.Employee)
-            .Where(lr => lr.ManagerId == currentUser.Id && lr.Status == "Pending")
+            .Where(lr => lr.ManagerId == currentUser.Id)
+            .OrderByDescending(lr => lr.StartDate)
             .ToListAsync();
 
         return View(leaveRequests);

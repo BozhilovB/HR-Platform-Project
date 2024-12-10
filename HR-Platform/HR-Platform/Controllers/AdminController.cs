@@ -106,7 +106,7 @@ public class AdminController : Controller
             TempData["ErrorMessage"] = "Invalid data.";
             return RedirectToAction("Index");
         }
-        
+
         model.FirstName = model.FirstName?.Trim();
         model.LastName = model.LastName?.Trim();
 
@@ -132,7 +132,12 @@ public class AdminController : Controller
 
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
-        user.Email = model.Email;
+
+        if (user.Email != model.Email)
+        {
+            user.Email = model.Email;
+            user.UserName = model.Email;
+        }
 
         var currentRoles = await _userManager.GetRolesAsync(user);
         var rolesToAdd = model.SelectedRoles.Except(currentRoles).ToList();
@@ -158,6 +163,13 @@ public class AdminController : Controller
             var teamMember = await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.UserId == user.Id && tm.TeamId == teamId);
             if (teamMember != null)
                 _context.TeamMembers.Remove(teamMember);
+        }
+
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join("; ", updateResult.Errors.Select(e => e.Description));
+            return RedirectToAction("EditUser", new { id = model.Id });
         }
 
         await _context.SaveChangesAsync();
