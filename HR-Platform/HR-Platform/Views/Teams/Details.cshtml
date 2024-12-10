@@ -5,24 +5,42 @@
 <p><strong>Team Name:</strong> @Model.Name</p>
 <p><strong>Manager:</strong> @Model.Manager.FirstName @Model.Manager.LastName</p>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <h3>Team Members</h3>
 @if (Model.TeamMembers.Any())
 {
-	<ul>
-		@foreach (var member in Model.TeamMembers)
-		{
-			<li>
-				@member.User.FirstName @member.User.LastName
-				@if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-				{
-					<a asp-controller="Profile" asp-action="Index" asp-route-id="@member.User.Id" class="btn btn-primary btn-sm">View Profile</a>
-				}
-			</li>
-		}
-	</ul>
+    <ul>
+        @foreach (var member in Model.TeamMembers)
+        {
+            <li>
+                @member.User.FirstName @member.User.LastName
+                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                {
+                    <form asp-action="RemoveMember" method="post" class="d-inline">
+                        <input type="hidden" name="teamId" value="@Model.Id" />
+                        <input type="hidden" name="userId" value="@member.UserId" />
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove this member?');">Remove</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
 }
 else
 {
-	<p>No members in this team.</p>
+    <p>No members in this team.</p>
 }
+
 <a asp-action="Index" class="btn btn-secondary">Back to Teams</a>
