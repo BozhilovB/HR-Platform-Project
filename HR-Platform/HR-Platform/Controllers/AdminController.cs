@@ -181,15 +181,32 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteUser(string id)
     {
-        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == id);
-        if (user == null) return NotFound();
+        var user = await _userManager.Users
+            .Include(u => u.Teams)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "User not found.";
+            return RedirectToAction("Index");
+        }
+
+        var applicantEmail = user.Email;
 
         _context.TeamMembers.RemoveRange(_context.TeamMembers.Where(tm => tm.UserId == id));
+        _context.JobApplications.RemoveRange(_context.JobApplications.Where(ja => ja.ApplicantEmail == applicantEmail));
+
         var result = await _userManager.DeleteAsync(user);
 
-        if (result.Succeeded) TempData["SuccessMessage"] = "User deleted successfully.";
-        else TempData["ErrorMessage"] = "Failed to delete the user.";
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
+            return RedirectToAction("Index");
+        }
 
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "User and related data deleted successfully.";
         return RedirectToAction("Index");
     }
 }
