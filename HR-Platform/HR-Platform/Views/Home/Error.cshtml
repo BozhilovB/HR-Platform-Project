@@ -1,0 +1,9 @@
+﻿@model ErrorViewModel
+
+<h1>Internal Server Error</h1>
+<p>An unexpected error occurred. Please try again later.</p>
+@if (Model?.RequestId != null)
+{
+    <p>Request ID: @Model.RequestId</p>
+}
+<a asp-controller="Home" asp-action="Index" class="btn btn-primary">Back to Home</a>

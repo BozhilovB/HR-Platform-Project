@@ -28,5 +28,14 @@ namespace HR_Platform.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        [Route("Home/StatusCode")]
+        public IActionResult StatusCode(int code)
+        {
+            if (code == 404)
+                return View("NotFound");
+
+            return View("UnknownError");
+        }
     }
 }
