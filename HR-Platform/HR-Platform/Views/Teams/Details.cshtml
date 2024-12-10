@@ -8,18 +8,21 @@
 <h3>Team Members</h3>
 @if (Model.TeamMembers.Any())
 {
-        <ul>
-        @foreach (var member in Model.TeamMembers)
-        {
-                    <li>
-                @member.User.FirstName @member.User.LastName
-                        <a asp-controller="Profile" asp-action="Index" asp-route-id="@member.User.Id" class="btn btn-primary btn-sm">View Profile</a>
-                    </li>
-        }
-        </ul>
+	<ul>
+		@foreach (var member in Model.TeamMembers)
+		{
+			<li>
+				@member.User.FirstName @member.User.LastName
+				@if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+				{
+					<a asp-controller="Profile" asp-action="Index" asp-route-id="@member.User.Id" class="btn btn-primary btn-sm">View Profile</a>
+				}
+			</li>
+		}
+	</ul>
 }
 else
 {
-        <p>No members in this team.</p>
+	<p>No members in this team.</p>
 }
 <a asp-action="Index" class="btn btn-secondary">Back to Teams</a>
