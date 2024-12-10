@@ -103,7 +103,7 @@ public class LeaveRequestsController : Controller
 		return RedirectToAction("Index");
 	}
 
-    [Authorize(Roles = "Manager")]
+    [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> Review()
     {
         var currentUser = await _userManager.GetUserAsync(User);
@@ -113,9 +113,23 @@ public class LeaveRequestsController : Controller
             return RedirectToAction("Index");
         }
 
-        var leaveRequests = await _context.LeaveRequests
-            .Include(lr => lr.Employee)
-            .Where(lr => lr.ManagerId == currentUser.Id)
+        IQueryable<LeaveRequest> leaveRequestsQuery;
+
+        if (User.IsInRole("Admin"))
+        {
+            leaveRequestsQuery = _context.LeaveRequests
+                .Include(lr => lr.Employee)
+                .Include(lr => lr.Team);
+        }
+        else
+        {
+            leaveRequestsQuery = _context.LeaveRequests
+                .Include(lr => lr.Employee)
+                .Include(lr => lr.Team)
+                .Where(lr => lr.ManagerId == currentUser.Id);
+        }
+
+        var leaveRequests = await leaveRequestsQuery
             .OrderByDescending(lr => lr.StartDate)
             .ToListAsync();
 
@@ -123,7 +137,7 @@ public class LeaveRequestsController : Controller
     }
 
     [HttpPost]
-    [Authorize(Roles = "Manager")]
+    [Authorize(Roles = "Manager,Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveReject(int id, string action)
     {
