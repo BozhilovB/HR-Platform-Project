@@ -90,6 +90,11 @@ namespace HR_Platform.Areas.Identity.Pages.Account
             {
                 ModelState.AddModelError(string.Empty, ErrorMessage);
             }
+            if (User.Identity.IsAuthenticated)
+            {
+                Response.Redirect(Url.Content("~/"));
+                return;
+            }
 
             returnUrl ??= Url.Content("~/");
 
