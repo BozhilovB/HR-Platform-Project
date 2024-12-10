@@ -71,7 +71,8 @@ namespace HR_Platform.Areas.Identity.Pages.Account
         public class InputModel
         {
             [Required]
-            [EmailAddress]
+            [EmailAddress(ErrorMessage = "Invalid email address.")]
+            [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The email must be a valid email address with a proper domain.")]
             [Display(Name = "Email")]
             public string Email { get; set; }
 
