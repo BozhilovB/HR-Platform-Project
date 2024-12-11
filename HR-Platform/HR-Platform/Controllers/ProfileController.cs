@@ -1,38 +1,32 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 [Authorize]
 public class ProfileController : Controller
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ApplicationDbContext _context;
+    private readonly ProfileService _profileService;
 
-    public ProfileController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+    public ProfileController(ProfileService profileService)
     {
-        _userManager = userManager;
-        _context = context;
+        _profileService = profileService;
     }
 
     public async Task<IActionResult> Index(string? id = null)
     {
-        var userId = id ?? _userManager.GetUserId(User);
-        var currentUser = await _userManager.GetUserAsync(User);
-
+        var currentUser = await _profileService.GetCurrentUserAsync(User);
         if (currentUser == null)
         {
             return Unauthorized();
         }
 
-        var targetUser = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var userId = id ?? currentUser.Id;
+        var targetUser = await _profileService.GetTargetUserAsync(userId);
         if (targetUser == null)
         {
             return NotFound();
         }
 
-        var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
-
+        var currentUserRoles = await _profileService.GetCurrentUserRolesAsync(currentUser);
         if (!currentUserRoles.Contains("Admin") &&
             !currentUserRoles.Contains("HR") &&
             !currentUserRoles.Contains("Manager") &&
@@ -41,15 +35,8 @@ public class ProfileController : Controller
             return Forbid();
         }
 
-        var managedTeams = await _context.Teams
-        .Where(t => t.ManagerId == targetUser.Id)
-        .ToListAsync();
-
-
-        var teamMemberships = await _context.TeamMembers
-            .Where(tm => tm.UserId == targetUser.Id)
-            .Include(tm => tm.Team)
-            .ToListAsync();
+        var managedTeams = await _profileService.GetManagedTeamsAsync(targetUser.Id);
+        var teamMemberships = await _profileService.GetTeamMembershipsAsync(targetUser.Id);
 
         var isOwnProfile = targetUser.Id == currentUser.Id;
 
@@ -68,9 +55,13 @@ public class ProfileController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateSalary(string userId, decimal salary)
     {
-        var currentUserId = _userManager.GetUserId(User);
+        var currentUser = await _profileService.GetCurrentUserAsync(User);
+        if (currentUser == null)
+        {
+            return Unauthorized();
+        }
 
-        var userToUpdate = await _context.Users.Include(u => u.Teams).FirstOrDefaultAsync(u => u.Id == userId);
+        var userToUpdate = await _profileService.GetTargetUserAsync(userId);
         if (userToUpdate == null)
         {
             return NotFound();
@@ -78,15 +69,14 @@ public class ProfileController : Controller
 
         if (User.IsInRole("Manager"))
         {
-            var managesTeam = await _context.Teams.AnyAsync(t => t.ManagerId == currentUserId && t.TeamMembers.Any(tm => tm.UserId == userId));
+            var managesTeam = await _profileService.IsManagerOfUserAsync(currentUser.Id, userId);
             if (!managesTeam)
             {
                 return Forbid();
             }
         }
 
-        userToUpdate.Salary = salary;
-        await _context.SaveChangesAsync();
+        await _profileService.UpdateSalaryAsync(userId, salary);
 
         return RedirectToAction("Index", new { id = userId });
     }

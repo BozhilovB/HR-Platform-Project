@@ -28,6 +28,7 @@
                 @member.User.FirstName @member.User.LastName
                 @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                 {
+                    <a asp-controller="Profile" asp-action="Index" asp-route-id="@member.UserId" class="btn btn-primary btn-sm">View Details</a>
                     <form asp-action="RemoveMember" method="post" class="d-inline">
                         <input type="hidden" name="teamId" value="@Model.Id" />
                         <input type="hidden" name="userId" value="@member.UserId" />

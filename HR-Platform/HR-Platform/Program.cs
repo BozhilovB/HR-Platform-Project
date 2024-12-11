@@ -29,6 +29,7 @@ namespace HR_Platform
             builder.Services.AddScoped<JobApplicationsService>();
             builder.Services.AddScoped<JobPostingsService>();
             builder.Services.AddScoped<LeaveRequestsService>();
+            builder.Services.AddScoped<ProfileService>();
 
             var app = builder.Build();
 
