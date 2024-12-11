@@ -16,7 +16,7 @@ Seed data and users for testing purposes can be found in the `Data` folder.
 - ASP.NET Core
 - MS SQL
 - ASP.NET Identity (for user management)
-
+- xUnit (for unit testing)
 ## Setup
 1. Clone the repository.
 2. Ensure that the `appsettings.json` is configured correctly for your local or production environment.
