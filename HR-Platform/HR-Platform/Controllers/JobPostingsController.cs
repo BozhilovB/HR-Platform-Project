@@ -1,23 +1,21 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 [Authorize]
 public class JobPostingsController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly JobPostingsService _jobPostingsService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public JobPostingsController(ApplicationDbContext context)
+    public JobPostingsController(JobPostingsService jobPostingsService, IHttpContextAccessor httpContextAccessor)
     {
-        _context = context;
+        _jobPostingsService = jobPostingsService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IActionResult> Index()
     {
-        var jobPostings = await _context.JobPostings
-            .Include(jp => jp.Recruiter)
-            .ToListAsync();
-
+        var jobPostings = await _jobPostingsService.GetJobPostingsAsync();
         return View(jobPostings);
     }
 
@@ -38,18 +36,8 @@ public class JobPostingsController : Controller
             return View(model);
         }
 
-        var recruiterId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-        var jobPosting = new JobPosting
-        {
-            Title = model.Title,
-            Description = model.Description,
-            PostedDate = DateTime.UtcNow,
-            RecruiterId = recruiterId
-        };
-
-        _context.JobPostings.Add(jobPosting);
-        await _context.SaveChangesAsync();
+        var recruiterId = _httpContextAccessor.HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await _jobPostingsService.CreateJobPostingAsync(model, recruiterId);
 
         return RedirectToAction(nameof(Index));
     }
@@ -58,7 +46,7 @@ public class JobPostingsController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
+        var jobPosting = await _jobPostingsService.GetJobPostingByIdAsync(id);
         if (jobPosting == null)
         {
             return NotFound();
@@ -84,16 +72,15 @@ public class JobPostingsController : Controller
             return View(model);
         }
 
-        var existingJob = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
-        if (existingJob == null)
+        try
         {
+            await _jobPostingsService.UpdateJobPostingAsync(id, model);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            TempData["ErrorMessage"] = ex.Message;
             return NotFound();
         }
-
-        existingJob.Title = model.Title;
-        existingJob.Description = model.Description;
-
-        await _context.SaveChangesAsync();
 
         return RedirectToAction(nameof(Index));
     }
@@ -101,23 +88,23 @@ public class JobPostingsController : Controller
     [Authorize(Roles = "Recruiter,Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var jobPosting = await _context.JobPostings.FindAsync(id);
-        if (jobPosting == null)
+        try
         {
+            await _jobPostingsService.DeleteJobPostingAsync(id);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            TempData["ErrorMessage"] = ex.Message;
             return NotFound();
         }
 
-        _context.JobPostings.Remove(jobPosting);
-        await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
 
     [Authorize(Roles = "Recruiter,Admin")]
     public async Task<IActionResult> Applicants(int id)
     {
-        var jobApplications = await _context.JobApplications
-            .Where(ja => ja.JobPostingId == id)
-            .ToListAsync();
+        var jobApplications = await _jobPostingsService.GetJobApplicantsAsync(id);
 
         if (!jobApplications.Any())
         {
