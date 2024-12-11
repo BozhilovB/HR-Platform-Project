@@ -9,23 +9,17 @@ namespace HR_Platform.Controllers
     [Authorize]
     public class JobApplicationsController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly JobApplicationsService _jobApplicationsService;
 
-        public JobApplicationsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public JobApplicationsController(JobApplicationsService jobApplicationsService)
         {
-            _context = context;
-            _userManager = userManager;
+            _jobApplicationsService = jobApplicationsService;
         }
 
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> Applicants(int id)
         {
-            var jobApplications = await _context.JobApplications
-                .Where(ja => ja.JobPostingId == id && ja.Status != "Denied" && ja.Status != "Approved")
-                .Include(ja => ja.JobPosting)
-                .ToListAsync();
-
+            var jobApplications = await _jobApplicationsService.GetApplicantsAsync(id);
             if (!jobApplications.Any())
             {
                 return View(new List<JobApplication>());
@@ -41,31 +35,11 @@ namespace HR_Platform.Controllers
         [HttpGet]
         public async Task<IActionResult> Approve(int id)
         {
-            var application = await _context.JobApplications
-                .Include(ja => ja.JobPosting)
-                .FirstOrDefaultAsync(ja => ja.Id == id);
-
-            if (application == null)
-            {
+            var viewModel = await _jobApplicationsService.GetApproveViewModelAsync(id);
+            if (viewModel == null)
                 return NotFound();
-            }
 
-            var teams = _context.Teams.Select(t => new SelectListItem
-            {
-                Value = t.Id.ToString(),
-                Text = t.Name
-            }).ToList();
-
-            var viewModel = new ApproveApplicationViewModel
-            {
-                ApplicationId = id,
-                ApplicantName = application.ApplicantName,
-                ApplicantEmail = application.ApplicantEmail,
-                Teams = teams,
-                JobPostingTitle = application.JobPosting.Title
-            };
-
-            return View("~/Views/JobApplications/Approve.cshtml", viewModel);
+            return View(viewModel);
         }
 
         [Authorize(Roles = "Recruiter,Admin")]
@@ -75,71 +49,28 @@ namespace HR_Platform.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var teams = _context.Teams.Select(t => new SelectListItem
-                {
-                    Value = t.Id.ToString(),
-                    Text = t.Name
-                }).ToList();
-
-                model.Teams = teams;
                 return View(model);
             }
 
-            var applicant = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.ApplicantEmail);
-            if (applicant == null)
+            try
             {
-                return NotFound();
+                await _jobApplicationsService.ApproveApplicationAsync(model);
+                return RedirectToAction("Applicants", new { id = model.ApplicationId });
             }
-
-            if (await _userManager.IsInRoleAsync(applicant, "User"))
+            catch (Exception ex)
             {
-                await _userManager.RemoveFromRoleAsync(applicant, "User");
+                TempData["ErrorMessage"] = ex.Message;
+                return View(model);
             }
-
-            if (!await _userManager.IsInRoleAsync(applicant, "Employee"))
-            {
-                await _userManager.AddToRoleAsync(applicant, "Employee");
-            }
-
-            applicant.Salary = model.Salary;
-            applicant.Teams.Add(new TeamMember
-            {
-                TeamId = model.SelectedTeamId,
-                UserId = applicant.Id,
-                JoinedAt = DateTime.UtcNow
-            });
-
-            var application = await _context.JobApplications.FindAsync(model.ApplicationId);
-            if (application != null)
-            {
-                application.Status = "Approved";
-            }
-
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Applicants", new { id = application.JobPostingId });
         }
 
         [Authorize(Roles = "Recruiter,Admin")]
         [HttpGet]
         public async Task<IActionResult> Deny(int id)
         {
-            var application = await _context.JobApplications
-                .Include(ja => ja.JobPosting)
-                .FirstOrDefaultAsync(ja => ja.Id == id);
-
-            if (application == null)
-            {
+            var viewModel = await _jobApplicationsService.GetDenyViewModelAsync(id);
+            if (viewModel == null)
                 return NotFound();
-            }
-
-            var viewModel = new DenyApplicationViewModel
-            {
-                ApplicationId = id,
-                ApplicantName = application.ApplicantName,
-                ApplicantEmail = application.ApplicantEmail,
-                JobPostingTitle = application.JobPosting.Title
-            };
 
             return View(viewModel);
         }
@@ -149,157 +80,23 @@ namespace HR_Platform.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deny(DenyApplicationViewModel model)
         {
-            if (!ModelState.IsValid)
+            try
             {
+                await _jobApplicationsService.DenyApplicationAsync(model);
+                return RedirectToAction("Applicants", new { id = model.ApplicationId });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
                 return View(model);
             }
-
-            var application = await _context.JobApplications.FindAsync(model.ApplicationId);
-            if (application == null)
-            {
-                return NotFound();
-            }
-
-            application.Status = "Denied";
-            application.DenialReason = model.DenialReason;
-
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction("Applicants", new { id = application.JobPostingId });
         }
 
         [Authorize(Roles = "Recruiter,Admin,HR")]
         public async Task<IActionResult> ApplicantLog(string? title, string? postedDate, string? recruiter, string? applicantName)
         {
-            var jobApplications = _context.JobApplications
-                .Include(ja => ja.JobPosting)
-                .ThenInclude(jp => jp.Recruiter)
-                .Where(ja => ja.Status == "Approved" || ja.Status == "Denied");
-
-            if (!string.IsNullOrEmpty(title))
-            {
-                title = title.Trim();
-                jobApplications = jobApplications.Where(ja => EF.Functions.Like(ja.JobPosting.Title, $"%{title}%"));
-            }
-
-            if (!string.IsNullOrEmpty(postedDate) && DateTime.TryParse(postedDate, out var parsedDate))
-            {
-                jobApplications = jobApplications.Where(ja => ja.JobPosting.PostedDate.Date == parsedDate.Date);
-            }
-
-            if (!string.IsNullOrEmpty(recruiter))
-            {
-                recruiter = recruiter.Trim().ToLower();
-                jobApplications = jobApplications.Where(ja =>
-                    EF.Functions.Like(ja.JobPosting.Recruiter.FirstName.ToLower(), $"%{recruiter}%") ||
-                    EF.Functions.Like(ja.JobPosting.Recruiter.LastName.ToLower(), $"%{recruiter}%") ||
-                    EF.Functions.Like(ja.JobPosting.Recruiter.Email.ToLower(), $"%{recruiter}%") ||
-                    EF.Functions.Like((ja.JobPosting.Recruiter.FirstName + " " + ja.JobPosting.Recruiter.LastName).ToLower(), $"%{recruiter}%"));
-            }
-
-            if (!string.IsNullOrEmpty(applicantName))
-            {
-                applicantName = applicantName.Trim().ToLower();
-                jobApplications = jobApplications.Where(ja =>
-                    EF.Functions.Like(ja.ApplicantName.ToLower(), $"%{applicantName}%"));
-            }
-
-            ViewData["TitleFilter"] = title;
-            ViewData["PostedDateFilter"] = postedDate;
-            ViewData["RecruiterFilter"] = recruiter;
-            ViewData["ApplicantNameFilter"] = applicantName;
-
-            var filteredApplications = await jobApplications.ToListAsync();
-            return View(filteredApplications);
-        }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> Apply(int id)
-        {
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null)
-            {
-                TempData["ErrorMessage"] = "Unable to find your user information.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            var hasPendingApplication = await _context.JobApplications
-                .AnyAsync(ja => ja.ApplicantEmail.ToLower() == currentUser.Email.ToLower() && ja.Status == "Pending");
-
-            if (hasPendingApplication)
-            {
-                TempData["ErrorMessage"] = "You already have a pending application. Please wait for it to be processed before applying for another job.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == id);
-
-            if (jobPosting == null)
-            {
-                TempData["ErrorMessage"] = "Job posting not found.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            ViewBag.JobPostingTitle = jobPosting.Title;
-
-            var viewModel = new ApplyJobViewModel
-            {
-                JobPostingId = id
-            };
-
-            return View(viewModel);
-        }
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Apply(ApplyJobViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                TempData["ErrorMessage"] = "Invalid data submitted. Please check your inputs.";
-                return View(model);
-            }
-
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null)
-            {
-                TempData["ErrorMessage"] = "Unable to find your user information.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            var hasPendingApplication = await _context.JobApplications
-                .AnyAsync(ja => ja.ApplicantEmail.ToLower() == currentUser.Email.ToLower() && ja.Status == "Pending");
-
-            if (hasPendingApplication)
-            {
-                TempData["ErrorMessage"] = "You already have a pending application.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            var jobPosting = await _context.JobPostings.FirstOrDefaultAsync(jp => jp.Id == model.JobPostingId);
-
-            if (jobPosting == null)
-            {
-                TempData["ErrorMessage"] = "Job posting not found.";
-                return RedirectToAction("Index", "JobPostings");
-            }
-
-            var jobApplication = new JobApplication
-            {
-                ApplicantName = $"{currentUser.FirstName} {currentUser.LastName}",
-                ApplicantEmail = currentUser.Email,
-                ResumeUrl = model.ResumeUrl,
-                Status = "Pending",
-                JobPostingId = jobPosting.Id
-            };
-
-            _context.JobApplications.Add(jobApplication);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Your application has been submitted successfully.";
-            return RedirectToAction("Index", "JobPostings");
+            var applications = await _jobApplicationsService.GetFilteredApplicationsAsync(title, postedDate, recruiter, applicantName);
+            return View(applications);
         }
     }
 }

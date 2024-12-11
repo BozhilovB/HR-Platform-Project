@@ -30,6 +30,8 @@ namespace HR_Platform
             builder.Services.AddScoped<JobPostingsService>();
             builder.Services.AddScoped<LeaveRequestsService>();
             builder.Services.AddScoped<ProfileService>();
+            builder.Services.AddScoped<TeamsService>();
+
 
             var app = builder.Build();
 
