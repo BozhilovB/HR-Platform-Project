@@ -6,6 +6,20 @@
 
 <form method="get" asp-action="Index">
     <div class="row">
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
         <div class="col-md-4">
             <label for="searchTerm">Search</label>
             <input type="text" name="searchTerm" class="form-control" placeholder="Search by name or email" value="@ViewData["SearchTerm"]" />
