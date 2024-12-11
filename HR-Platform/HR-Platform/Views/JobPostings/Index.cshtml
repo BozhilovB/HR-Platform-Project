@@ -61,4 +61,5 @@
 @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
 {
     <a asp-controller="JobPostings" asp-action="Create" class="btn btn-success">Create New Job Posting</a>
+    <a asp-controller="JobApplications" asp-action="ApplicantLog" class="btn btn-primary ml-2">View Applicant Logs</a>
 }
