@@ -15,7 +15,6 @@ Seed data and users for testing purposes can be found in the `Data` folder.
 ## Technologies
 - ASP.NET Core
 - MS SQL
-- SignalR (for real-time features)
 - ASP.NET Identity (for user management)
 
 ## Setup
