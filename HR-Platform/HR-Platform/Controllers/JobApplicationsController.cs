@@ -16,6 +16,71 @@ namespace HR_Platform.Controllers
             _jobApplicationsService = jobApplicationsService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Apply(int id)
+        {
+            var userEmail = User.Identity.Name;
+
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var hasPendingApplication = await _jobApplicationsService.HasPendingApplicationAsync(userEmail);
+
+                if (hasPendingApplication)
+                {
+                    TempData["ErrorMessage"] = "You already have a pending application. Please wait for its outcome before applying for another job.";
+                    return RedirectToAction("Index", "JobPostings");
+                }
+
+                var model = await _jobApplicationsService.GetApplyViewModelAsync(id, userEmail);
+                return View(model);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Index", "JobPostings");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Apply(ApplyJobViewModel model)
+        {
+            var userEmail = User.Identity.Name;
+
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return Unauthorized();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                await _jobApplicationsService.ApplyForJobAsync(model, userEmail);
+                TempData["SuccessMessage"] = "You have successfully applied for the job!";
+            }
+            catch (KeyNotFoundException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Index", "JobPostings");
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return View(model);
+            }
+
+            return RedirectToAction("Index", "JobPostings");
+        }
+
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> Applicants(int id)
         {

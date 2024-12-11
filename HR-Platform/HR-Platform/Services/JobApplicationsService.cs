@@ -187,4 +187,11 @@ public class JobApplicationsService
         _context.JobApplications.Add(jobApplication);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<bool> HasPendingApplicationAsync(string userEmail)
+    {
+        return await _context.JobApplications.AnyAsync(ja =>
+            ja.ApplicantEmail.ToLower() == userEmail.ToLower() &&
+            ja.Status == "Pending");
+    }
 }
