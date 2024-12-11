@@ -145,7 +145,6 @@ public class AdminService
     await _context.SaveChangesAsync();
 }
 
-
     public async Task DeleteUserAsync(ApplicationUser user)
     {
         var applicantEmail = user.Email;
