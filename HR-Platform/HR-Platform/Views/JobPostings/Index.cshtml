@@ -58,7 +58,7 @@
     </tbody>
 </table>
 
-@if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
+@if (User.IsInRole("Recruiter") || User.IsInRole("Admin")|| User.IsInRole("HR"))
 {
     <a asp-controller="JobPostings" asp-action="Create" class="btn btn-success">Create New Job Posting</a>
     <a asp-controller="JobApplications" asp-action="ApplicantLog" class="btn btn-primary ml-2">View Applicant Logs</a>
