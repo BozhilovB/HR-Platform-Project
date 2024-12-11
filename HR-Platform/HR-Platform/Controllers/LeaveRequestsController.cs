@@ -1,17 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 [Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
 public class LeaveRequestsController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly LeaveRequestsService _leaveRequestsService;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public LeaveRequestsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public LeaveRequestsController(LeaveRequestsService leaveRequestsService, UserManager<ApplicationUser> userManager)
     {
-        _context = context;
+        _leaveRequestsService = leaveRequestsService;
         _userManager = userManager;
     }
 
@@ -25,13 +24,7 @@ public class LeaveRequestsController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        var today = DateTime.UtcNow.Date;
-
-        var leaveRequests = await _context.LeaveRequests
-            .Where(lr => lr.EmployeeId == currentUser.Id && lr.EndDate >= today)
-            .OrderBy(lr => lr.StartDate)
-            .ToListAsync();
-
+        var leaveRequests = await _leaveRequestsService.GetUserLeaveRequestsAsync(currentUser.Id, DateTime.UtcNow.Date);
         return View(leaveRequests);
     }
 
@@ -43,65 +36,43 @@ public class LeaveRequestsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Employee,Manager,HR,Recruiter,Admin")]
-	public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
-	{
-		if (model.EndDate < model.StartDate)
-		{
-			ModelState.AddModelError("EndDate", "End Date cannot be before Start Date.");
-		}
+    public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
+    {
+        if (model.EndDate < model.StartDate)
+        {
+            ModelState.AddModelError("EndDate", "End Date cannot be before Start Date.");
+        }
 
-		if (!ModelState.IsValid)
-		{
-			return View(model);
-		}
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
 
-		var currentUser = await _userManager.GetUserAsync(User);
-		if (currentUser == null)
-		{
-			TempData["ErrorMessage"] = "Unable to find your user information.";
-			return RedirectToAction("Index");
-		}
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser == null)
+        {
+            TempData["ErrorMessage"] = "Unable to find your user information.";
+            return RedirectToAction("Index");
+        }
 
-		var teamMember = await _context.TeamMembers
-			.Include(tm => tm.Team)
-			.FirstOrDefaultAsync(tm => tm.UserId == currentUser.Id);
+        var teamMember = await _leaveRequestsService.GetTeamMemberAsync(currentUser.Id);
+        if (teamMember == null)
+        {
+            TempData["ErrorMessage"] = "You are not part of any team.";
+            return RedirectToAction("Index");
+        }
 
-		if (teamMember == null)
-		{
-			TempData["ErrorMessage"] = "You are not part of any team.";
-			return RedirectToAction("Index");
-		}
+        if (await _leaveRequestsService.HasOverlappingLeaveRequestAsync(currentUser.Id, model.StartDate, model.EndDate))
+        {
+            TempData["ErrorMessage"] = "You already have a leave request overlapping with the selected dates.";
+            return RedirectToAction("Index");
+        }
 
-		var hasOverlappingRequests = await _context.LeaveRequests
-			.Where(lr =>
-				lr.EmployeeId == currentUser.Id &&
-				lr.StartDate <= model.EndDate &&
-				lr.EndDate >= model.StartDate)
-			.AnyAsync();
+        await _leaveRequestsService.SubmitLeaveRequestAsync(currentUser.Id, teamMember.TeamId, model.StartDate, model.EndDate, teamMember.Team.ManagerId);
 
-		if (hasOverlappingRequests)
-		{
-			TempData["ErrorMessage"] = "You already have a leave request overlapping with the selected dates.";
-			return RedirectToAction("Index");
-		}
-
-		var leaveRequest = new LeaveRequest
-		{
-			EmployeeId = currentUser.Id,
-			TeamId = teamMember.TeamId,
-			StartDate = model.StartDate,
-			EndDate = model.EndDate,
-			Status = "Pending",
-			ManagerId = teamMember.Team.ManagerId
-		};
-
-		_context.LeaveRequests.Add(leaveRequest);
-		await _context.SaveChangesAsync();
-
-		TempData["SuccessMessage"] = "Your leave request has been submitted successfully.";
-		return RedirectToAction("Index");
-	}
+        TempData["SuccessMessage"] = "Your leave request has been submitted successfully.";
+        return RedirectToAction("Index");
+    }
 
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> Review()
@@ -113,26 +84,8 @@ public class LeaveRequestsController : Controller
             return RedirectToAction("Index");
         }
 
-        IQueryable<LeaveRequest> leaveRequestsQuery;
-
-        if (User.IsInRole("Admin"))
-        {
-            leaveRequestsQuery = _context.LeaveRequests
-                .Include(lr => lr.Employee)
-                .Include(lr => lr.Team);
-        }
-        else
-        {
-            leaveRequestsQuery = _context.LeaveRequests
-                .Include(lr => lr.Employee)
-                .Include(lr => lr.Team)
-                .Where(lr => lr.ManagerId == currentUser.Id);
-        }
-
-        var leaveRequests = await leaveRequestsQuery
-            .OrderByDescending(lr => lr.StartDate)
-            .ToListAsync();
-
+        var isAdmin = User.IsInRole("Admin");
+        var leaveRequests = await _leaveRequestsService.GetLeaveRequestsForReviewAsync(currentUser.Id, isAdmin);
         return View(leaveRequests);
     }
 
@@ -141,31 +94,27 @@ public class LeaveRequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveReject(int id, string action)
     {
-        var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+        try
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var leaveRequest = await _leaveRequestsService.GetLeaveRequestByIdAsync(id);
 
-        if (leaveRequest == null)
+            if (leaveRequest.ManagerId != currentUser.Id && !User.IsInRole("Admin"))
+            {
+                TempData["ErrorMessage"] = "You are not authorized to process this leave request.";
+                return RedirectToAction("Review");
+            }
+
+            var status = action == "Approve" ? "Approved" : "Rejected";
+            await _leaveRequestsService.UpdateLeaveRequestStatusAsync(id, status);
+
+            TempData["SuccessMessage"] = $"Leave request has been {status.ToLower()} successfully.";
+            return RedirectToAction("Review");
+        }
+        catch (KeyNotFoundException)
         {
             TempData["ErrorMessage"] = "Leave request not found.";
             return RedirectToAction("Review");
         }
-
-        if (leaveRequest.ManagerId != (await _userManager.GetUserAsync(User)).Id)
-        {
-            TempData["ErrorMessage"] = "You are not authorized to process this leave request.";
-            return RedirectToAction("Review");
-        }
-
-        if (action == "Approve")
-        {
-            leaveRequest.Status = "Approved";
-        }
-        else if (action == "Reject")
-        {
-            leaveRequest.Status = "Rejected";
-        }
-
-        await _context.SaveChangesAsync();
-        TempData["SuccessMessage"] = $"Leave request has been {leaveRequest.Status.ToLower()} successfully.";
-        return RedirectToAction("Review");
     }
 }

@@ -37,7 +37,7 @@
                 <td>@request.EndDate.ToString("yyyy-MM-dd")</td>
                 <td>@request.Status</td>
                 <td>
-                    @if (request.Status == "Pending" && User.IsInRole("Manager"))
+                    @if (request.Status == "Pending" && (User.IsInRole("Manager") || User.IsInRole("Admin")))
                     {
                         <form asp-action="ApproveReject" method="post" class="d-inline">
                             <input type="hidden" name="id" value="@request.Id" />
