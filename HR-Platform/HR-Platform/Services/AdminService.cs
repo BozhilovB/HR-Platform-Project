@@ -85,45 +85,66 @@ public class AdminService
     }
 
     public async Task UpdateUserAsync(ApplicationUser user, UserEditViewModel model)
+{
+    user.FirstName = model.FirstName.Trim();
+    user.LastName = model.LastName.Trim();
+
+    if (user.Email != model.Email)
     {
-        user.FirstName = model.FirstName.Trim();
-        user.LastName = model.LastName.Trim();
-
-        if (user.Email != model.Email)
-        {
-            user.Email = model.Email;
-            user.UserName = model.Email;
-        }
-
-        var currentRoles = await _userManager.GetRolesAsync(user);
-        var rolesToAdd = model.SelectedRoles.Except(currentRoles).ToList();
-        var rolesToRemove = currentRoles.Except(model.SelectedRoles).ToList();
-
-        if (rolesToAdd.Any())
-            await _userManager.AddToRolesAsync(user, rolesToAdd);
-
-        if (rolesToRemove.Any())
-            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
-
-        var currentTeamIds = user.Teams.Select(t => t.TeamId.ToString()).ToList();
-        var teamsToAdd = model.SelectedTeamIds.Except(currentTeamIds).Select(int.Parse).ToList();
-        var teamsToRemove = currentTeamIds.Except(model.SelectedTeamIds).Select(int.Parse).ToList();
-
-        foreach (var teamId in teamsToAdd)
-        {
-            _context.TeamMembers.Add(new TeamMember { UserId = user.Id, TeamId = teamId, JoinedAt = DateTime.UtcNow });
-        }
-
-        foreach (var teamId in teamsToRemove)
-        {
-            var teamMember = await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.UserId == user.Id && tm.TeamId == teamId);
-            if (teamMember != null)
-                _context.TeamMembers.Remove(teamMember);
-        }
-
-        await _userManager.UpdateAsync(user);
-        await _context.SaveChangesAsync();
+        user.Email = model.Email;
+        user.UserName = model.Email;
     }
+
+    var currentRoles = await _userManager.GetRolesAsync(user);
+    var rolesToAdd = model.SelectedRoles.Except(currentRoles).ToList();
+    var rolesToRemove = currentRoles.Except(model.SelectedRoles).ToList();
+
+    if (rolesToAdd.Any())
+        await _userManager.AddToRolesAsync(user, rolesToAdd);
+
+    if (rolesToRemove.Any())
+        await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+
+    var currentTeamIds = user.Teams.Select(t => t.TeamId.ToString()).ToList();
+    var teamsToAdd = model.SelectedTeamIds.Except(currentTeamIds).Select(int.Parse).ToList();
+    var teamsToRemove = currentTeamIds.Except(model.SelectedTeamIds).Select(int.Parse).ToList();
+
+    foreach (var teamId in teamsToAdd)
+    {
+        _context.TeamMembers.Add(new TeamMember { UserId = user.Id, TeamId = teamId, JoinedAt = DateTime.UtcNow });
+    }
+
+    foreach (var teamId in teamsToRemove)
+    {
+        var teamMember = await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.UserId == user.Id && tm.TeamId == teamId);
+        if (teamMember != null)
+            _context.TeamMembers.Remove(teamMember);
+    }
+
+    var jobApplications = await _context.JobApplications
+        .Where(ja => ja.ApplicantEmail == user.Email)
+        .ToListAsync();
+
+    foreach (var jobApplication in jobApplications)
+    {
+        jobApplication.ApplicantName = $"{user.FirstName} {user.LastName}";
+        jobApplication.ApplicantEmail = user.Email;
+    }
+
+    var leaveRequests = await _context.LeaveRequests
+        .Where(lr => lr.EmployeeId == user.Id)
+        .ToListAsync();
+
+    foreach (var leaveRequest in leaveRequests)
+    {
+        leaveRequest.EmployeeId = user.Id;
+        leaveRequest.Employee = user;
+    }
+
+    await _userManager.UpdateAsync(user);
+    await _context.SaveChangesAsync();
+}
+
 
     public async Task DeleteUserAsync(ApplicationUser user)
     {
