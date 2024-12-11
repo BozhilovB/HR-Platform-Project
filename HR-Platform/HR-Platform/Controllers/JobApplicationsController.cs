@@ -120,6 +120,7 @@ namespace HR_Platform.Controllers
             try
             {
                 await _jobApplicationsService.ApproveApplicationAsync(model);
+                TempData["SuccessMessage"] = "The application has been approved successfully!";
                 return RedirectToAction("Applicants", new { id = model.ApplicationId });
             }
             catch (Exception ex)
@@ -145,9 +146,15 @@ namespace HR_Platform.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deny(DenyApplicationViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
             try
             {
                 await _jobApplicationsService.DenyApplicationAsync(model);
+                TempData["SuccessMessage"] = "The application has been denied successfully!";
                 return RedirectToAction("Applicants", new { id = model.ApplicationId });
             }
             catch (Exception ex)
