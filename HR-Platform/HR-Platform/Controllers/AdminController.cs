@@ -1,66 +1,30 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 [Authorize(Roles = "Admin")]
 public class AdminController : Controller
 {
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly AdminService _adminService;
 
-    public AdminController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public AdminController(AdminService adminService)
     {
-        _context = context;
-        _userManager = userManager;
+        _adminService = adminService;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(string? searchTerm, string? team, string? role)
     {
-        var usersQuery = _userManager.Users.Include(u => u.Teams).ThenInclude(tm => tm.Team).AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var normalizedTerm = searchTerm.Trim().ToLower();
-            usersQuery = usersQuery.Where(u =>
-                u.FirstName.ToLower().Contains(normalizedTerm) ||
-                u.LastName.ToLower().Contains(normalizedTerm) ||
-                u.Email.ToLower().Contains(normalizedTerm) ||
-                (u.FirstName + " " + u.LastName).ToLower().Contains(normalizedTerm));
-        }
-
-        if (!string.IsNullOrWhiteSpace(team))
-        {
-            var normalizedTeam = team.Trim();
-            usersQuery = usersQuery.Where(u =>
-                u.Teams.Any(tm => tm.Team.Name.Contains(normalizedTeam)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(role))
-        {
-            var normalizedRole = role.Trim();
-            var userIdsWithRole = (await _context.UserRoles
-                .Where(ur => _context.Roles.Any(r => r.Id == ur.RoleId && r.Name == normalizedRole))
-                .Select(ur => ur.UserId)
-                .ToListAsync());
-
-            usersQuery = usersQuery.Where(u => userIdsWithRole.Contains(u.Id));
-        }
-
-        var users = await usersQuery.ToListAsync();
+        var users = await _adminService.GetUsersAsync(searchTerm, team, role);
         ViewData["SearchTerm"] = searchTerm;
         ViewData["TeamFilter"] = team;
         ViewData["RoleFilter"] = role;
-
         return View(users);
     }
 
     [HttpGet]
     public async Task<IActionResult> EditUser(string id)
     {
-        var user = await _userManager.Users.Include(u => u.Teams).FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _adminService.GetUserByIdAsync(id);
 
         if (user == null)
         {
@@ -68,9 +32,9 @@ public class AdminController : Controller
             return RedirectToAction("Index");
         }
 
-        var allRoles = await _context.Roles.ToListAsync();
-        var allTeams = await _context.Teams.ToListAsync();
-        var userRoles = await _userManager.GetRolesAsync(user);
+        var allRoles = await _adminService.GetAllRolesAsync();
+        var allTeams = await _adminService.GetAllTeamsAsync(user.Id);
+        var userRoles = await _adminService.GetUserRolesAsync(user);
 
         var viewModel = new UserEditViewModel
         {
@@ -78,20 +42,10 @@ public class AdminController : Controller
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
-            SelectedRoles = userRoles.ToList(),
+            SelectedRoles = userRoles,
             SelectedTeamIds = user.Teams.Select(t => t.TeamId.ToString()).ToList(),
-            Roles = allRoles.Select(r => new SelectListItem
-            {
-                Value = r.Name,
-                Text = r.Name,
-                Selected = userRoles.Contains(r.Name)
-            }).ToList(),
-            Teams = allTeams.Select(t => new SelectListItem
-            {
-                Value = t.Id.ToString(),
-                Text = t.Name,
-                Selected = user.Teams.Any(ut => ut.TeamId == t.Id)
-            }).ToList()
+            Roles = allRoles,
+            Teams = allTeams
         };
 
         return View(viewModel);
@@ -107,22 +61,7 @@ public class AdminController : Controller
             return RedirectToAction("Index");
         }
 
-        model.FirstName = model.FirstName?.Trim();
-        model.LastName = model.LastName?.Trim();
-
-        if (string.IsNullOrEmpty(model.FirstName) || string.IsNullOrEmpty(model.LastName))
-        {
-            TempData["ErrorMessage"] = "First and last names cannot be empty.";
-            return RedirectToAction("EditUser", new { id = model.Id });
-        }
-
-        if (model.FirstName.Split(' ').Length > 1 || model.LastName.Split(' ').Length > 1)
-        {
-            TempData["ErrorMessage"] = "Names should only consist of a single word each.";
-            return RedirectToAction("EditUser", new { id = model.Id });
-        }
-
-        var user = await _userManager.Users.Include(u => u.Teams).FirstOrDefaultAsync(u => u.Id == model.Id);
+        var user = await _adminService.GetUserByIdAsync(model.Id);
 
         if (user == null)
         {
@@ -130,49 +69,8 @@ public class AdminController : Controller
             return RedirectToAction("Index");
         }
 
-        user.FirstName = model.FirstName;
-        user.LastName = model.LastName;
+        await _adminService.UpdateUserAsync(user, model);
 
-        if (user.Email != model.Email)
-        {
-            user.Email = model.Email;
-            user.UserName = model.Email;
-        }
-
-        var currentRoles = await _userManager.GetRolesAsync(user);
-        var rolesToAdd = model.SelectedRoles.Except(currentRoles).ToList();
-        var rolesToRemove = currentRoles.Except(model.SelectedRoles).ToList();
-
-        if (rolesToAdd.Any())
-            await _userManager.AddToRolesAsync(user, rolesToAdd);
-
-        if (rolesToRemove.Any())
-            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
-
-        var currentTeamIds = user.Teams.Select(t => t.TeamId.ToString()).ToList();
-        var teamsToAdd = model.SelectedTeamIds.Except(currentTeamIds).Select(int.Parse).ToList();
-        var teamsToRemove = currentTeamIds.Except(model.SelectedTeamIds).Select(int.Parse).ToList();
-
-        foreach (var teamId in teamsToAdd)
-        {
-            _context.TeamMembers.Add(new TeamMember { UserId = user.Id, TeamId = teamId, JoinedAt = DateTime.UtcNow });
-        }
-
-        foreach (var teamId in teamsToRemove)
-        {
-            var teamMember = await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.UserId == user.Id && tm.TeamId == teamId);
-            if (teamMember != null)
-                _context.TeamMembers.Remove(teamMember);
-        }
-
-        var updateResult = await _userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded)
-        {
-            TempData["ErrorMessage"] = string.Join("; ", updateResult.Errors.Select(e => e.Description));
-            return RedirectToAction("EditUser", new { id = model.Id });
-        }
-
-        await _context.SaveChangesAsync();
         TempData["SuccessMessage"] = "User updated successfully.";
         return RedirectToAction("Index");
     }
@@ -181,32 +79,23 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteUser(string id)
     {
-        var user = await _userManager.Users
-            .Include(u => u.Teams)
-            .FirstOrDefaultAsync(u => u.Id == id);
-
+        var user = await _adminService.GetUserByIdAsync(id);
         if (user == null)
         {
             TempData["ErrorMessage"] = "User not found.";
             return RedirectToAction("Index");
         }
 
-        var applicantEmail = user.Email;
-
-        _context.TeamMembers.RemoveRange(_context.TeamMembers.Where(tm => tm.UserId == id));
-        _context.JobApplications.RemoveRange(_context.JobApplications.Where(ja => ja.ApplicantEmail == applicantEmail));
-
-        var result = await _userManager.DeleteAsync(user);
-
-        if (!result.Succeeded)
+        try
         {
-            TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
-            return RedirectToAction("Index");
+            await _adminService.DeleteUserAsync(user);
+            TempData["SuccessMessage"] = "User deleted successfully.";
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = ex.Message;
         }
 
-        await _context.SaveChangesAsync();
-
-        TempData["SuccessMessage"] = "User and related data deleted successfully.";
         return RedirectToAction("Index");
     }
 }
